@@ -22,13 +22,21 @@ def test_conflict_on_a_real_item_swaps_in_a_new_candidate_same_slot():
     conflict["payload"]["item_id"] = original_item["item_id"]
 
     reply = handle(conflict)
-    assert len(reply) == 1
-    assert reply[0]["type"] == "proposal"
+    # A swap changes the place, so both a revised proposal and a refreshed
+    # workout_slot go out -- Restaurant's dinner-area decision depends on
+    # workout_slot.place, which would otherwise point at the retired gym.
+    assert len(reply) == 2
+    by_type = {m["type"]: m for m in reply}
+    assert set(by_type) == {"proposal", "workout_slot"}
 
-    new_item = reply[0]["payload"]["items"][0]
+    new_item = by_type["proposal"]["payload"]["items"][0]
     assert new_item["item_id"] != original_item["item_id"]
     assert new_item["slot_id"] == original_item["slot_id"]
     assert new_item["name"] != original_item["name"]
+
+    new_place = by_type["workout_slot"]["payload"]["place"]
+    assert new_place["item_id"] == new_item["item_id"]
+    assert new_place["name"] == new_item["name"]
 
 
 def test_conflict_on_an_unknown_item_returns_one_error():
