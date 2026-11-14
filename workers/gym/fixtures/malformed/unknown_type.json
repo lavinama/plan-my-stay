@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "type": "not_a_real_type",
+  "message_id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "concierge",
+  "to": ["gym"],
+  "sent_at": "2026-11-14T16:13:00-05:00",
+  "summary": "A message with a type gym does not recognize",
+  "payload": {}
+}
