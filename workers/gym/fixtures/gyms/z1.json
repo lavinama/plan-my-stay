@@ -1,0 +1,52 @@
+{
+  "note": "Fictional demo data for zone z1 (Chelsea, NYC). Not real businesses; invented for the Plan My Stay hackathon demo only.",
+  "gyms": [
+    {
+      "name": "Chelsea Forge Fitness",
+      "address": {"street": "155 W 21st St", "city": "New York", "zip": "10011"},
+      "lat": 40.7421,
+      "lng": -73.9958,
+      "gym_type": ["HIIT", "Strength"],
+      "hours": {
+        "Mon": "06:00-22:00",
+        "Tue": "06:00-22:00",
+        "Wed": "06:00-22:00",
+        "Thu": "06:00-22:00",
+        "Fri": "06:00-22:00",
+        "Sat": "08:00-20:00",
+        "Sun": "08:00-20:00"
+      },
+      "cost": {"currency": "USD", "amount": 25, "basis": "day_pass"},
+      "source": {"url": "https://example-fictional.test/chelsea-forge-fitness", "fetched_at": "2026-11-14T10:00:00-05:00"},
+      "dedupe_key": "chelsea-forge-fitness|10011"
+    },
+    {
+      "name": "IronPulse HIIT Studio",
+      "address": {"street": "242 W 23rd St", "city": "New York", "zip": "10011"},
+      "lat": 40.7447,
+      "lng": -73.9963,
+      "gym_type": ["HIIT"],
+      "hours": {
+        "Mon": "16:00-21:00",
+        "Tue": "16:00-21:00",
+        "Wed": "16:00-21:00",
+        "Thu": "16:00-21:00",
+        "Fri": "16:00-21:00"
+      },
+      "cost": {"currency": "USD", "amount": 30, "basis": "day_pass"},
+      "source": {"url": "https://example-fictional.test/ironpulse-hiit-studio", "fetched_at": "2026-11-14T10:05:00-05:00"},
+      "dedupe_key": "ironpulse-hiit-studio|10011"
+    },
+    {
+      "name": "Chelsea Underground Gym",
+      "address": {"street": "88 9th Ave", "city": "New York", "zip": "10011"},
+      "lat": 40.7439,
+      "lng": -74.0001,
+      "gym_type": ["HIIT", "CrossTraining"],
+      "hours": null,
+      "cost": {"currency": "USD", "amount": null, "basis": "unknown"},
+      "source": {"url": "https://example-fictional.test/chelsea-underground-gym", "fetched_at": "2026-11-14T10:10:00-05:00"},
+      "dedupe_key": "chelsea-underground-gym|10011"
+    }
+  ]
+}
