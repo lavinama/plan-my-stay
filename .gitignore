@@ -6,7 +6,7 @@
 .env.*
 agent_config.yaml
 
-# local draft with real addresses; docs/PLAN.md is the redacted public version
+# local draft with real addresses, not committed; docs/PLAN.md is the shared/redacted version
 teamplan.txt
 
 # local junk
