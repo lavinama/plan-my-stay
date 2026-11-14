@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "type": "conflict",
+  "message_id": "c1d2e3f4-5a6b-7c8d-9e0f-1a2b3c4d5e6f",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "verifier",
+  "to": ["gym"],
+  "sent_at": "2026-11-14T16:12:00-05:00",
+  "summary": "Hours conflict on the Tuesday gym pick",
+  "payload": {
+    "rule": "hours_do_not_cover_window",
+    "item_id": "REPLACE_WITH_REAL_ITEM_ID",
+    "detail": "The source page's hours could not be re-confirmed for this slot.",
+    "suggestion": "Pick a different gym in the same zone for the same slot."
+  }
+}
