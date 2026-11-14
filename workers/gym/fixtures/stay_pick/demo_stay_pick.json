@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "type": "stay_pick",
+  "message_id": "9b2e7a10-4c3d-4f2a-8e1b-6a7c9d0e1f23",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 3,
+  "from": "stay",
+  "to": ["restaurant", "gym", "concierge"],
+  "sent_at": "2026-11-14T16:10:00-05:00",
+  "summary": "Stay picked: SoHo Loft, 155 Spring St area",
+  "payload": {
+    "stay_id": "stay-soho-loft-01",
+    "zone_id": "z3",
+    "lat": 40.7240,
+    "lng": -74.0005,
+    "commute": {"to_B_minutes": 12, "to_C_minutes": 6}
+  }
+}
