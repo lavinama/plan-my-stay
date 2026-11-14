@@ -1,0 +1,35 @@
+{
+  "note": "Fictional demo data for a 'near the stay' gym search (SoHo, NYC), used when no specific zone id matches a discovered zone file. Not real businesses; invented for the Plan My Stay hackathon demo only.",
+  "gyms": [
+    {
+      "name": "SoHo Sunrise Fitness",
+      "address": {"street": "155 Spring St", "city": "New York", "zip": "10012"},
+      "lat": 40.7246,
+      "lng": -74.0001,
+      "gym_type": ["HIIT", "Strength"],
+      "hours": {
+        "Mon": "05:30-22:00",
+        "Tue": "05:30-22:00",
+        "Wed": "05:30-22:00",
+        "Thu": "05:30-22:00",
+        "Fri": "05:30-22:00",
+        "Sat": "07:00-20:00",
+        "Sun": "07:00-20:00"
+      },
+      "cost": {"currency": "USD", "amount": 26, "basis": "day_pass"},
+      "source": {"url": "https://example-fictional.test/soho-sunrise-fitness", "fetched_at": "2026-11-14T10:25:00-05:00"},
+      "dedupe_key": "soho-sunrise-fitness|10012"
+    },
+    {
+      "name": "Lower Manhattan Athletic Club",
+      "address": {"city": "New York"},
+      "lat": 40.7238,
+      "lng": -74.0022,
+      "gym_type": ["HIIT"],
+      "hours": null,
+      "cost": {"currency": "USD", "amount": null, "basis": "unknown"},
+      "source": {"url": "https://example-fictional.test/lower-manhattan-athletic-club", "fetched_at": "2026-11-14T10:30:00-05:00"},
+      "dedupe_key": "lower-manhattan-athletic-club"
+    }
+  ]
+}
