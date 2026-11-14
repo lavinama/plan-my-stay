@@ -49,6 +49,17 @@ def test_hours_that_do_not_cover_window_are_excluded():
     assert fit["eligible"] is False
 
 
+def test_list_valued_hours_are_supported():
+    # docs/PLAN.md: hours values can be "several periods as a list" (e.g.
+    # a gym closed midday). The window (17:30-18:15) falls in the second
+    # period.
+    fit = score_candidate(
+        _candidate(hours={"Tue": ["06:00-10:00", "17:00-21:00"]}), PROFILE, WINDOW
+    )
+    assert fit["eligible"] is True
+    assert fit["missing"] == []
+
+
 def test_missing_hours_are_eligible_but_flagged():
     fit = score_candidate(_candidate(hours=None), PROFILE, WINDOW)
     assert fit["eligible"] is True
