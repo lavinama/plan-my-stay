@@ -1,9 +1,7 @@
 # Open questions before building the gym agent
 
-`docs/PLAN.md` (branch `docs/hive-mind-hackathon-plan`, PR #3) is a
-proposed design — its own test plan checklist marks "teammates review
-the owners and the open decisions" as unchecked, so it is not yet
-confirmed as agreed.
+`docs/PLAN.md` is the team's agreed plan, and this list now sits beside
+it. Answers recorded after the 14 Nov review are marked **Answer**.
 
 PR #1 (`feature/alternative-stays-worker`) and PR #2
 (`feature/adaptive-food-agent`) are being replaced with new PRs, so this
@@ -18,7 +16,7 @@ design questions rather than conflicts.
 `message_id`, `reply_to`, `trip_id`, `from`/`to`, `sent_at`, `summary`,
 `payload` — built by one shared `build_message`/`parse_message` module,
 with typed payloads (`request`, `proposal`, `zone_fit`, `workout_slot`,
-etc.), and a thin BAND wrapper around `handle(message) -> messages`.
+etc.), and one shared BAND adapter around `handle(message) -> messages`.
 
 **Why it matters for the gym agent:** every new worker PR, including the
 replacements for #1 and #2, should target this same envelope and
@@ -47,6 +45,9 @@ technical limitation to work around.
 **Why it matters:** the gym agent's "near the stay" anchor depends on
 what the stay worker can actually return, which depends on this
 decision landing before that worker is rebuilt.
+
+**Answer (14 Nov review):** Rohan picks the booking site, whichever the Stay
+agent prefers. If the Airbnb data is too complicated, he drops it.
 
 ## 4. Who builds the shared Keenable+SIE page reader?
 
@@ -95,7 +96,7 @@ confirming a faster path) before any worker wires this in for real.
 
 ## 6. Who wires BAND — one coordinator or four?
 
-`docs/PLAN.md` has each of the four people individually register their
+`docs/PLAN.md` first had each of the four people individually register their
 own seat at app.band.ai and ship their own thin BAND wrapper around
 `handle(message) -> messages`, rather than one person building a single
 coordinator that calls plain-JSON workers.
@@ -103,6 +104,11 @@ coordinator that calls plain-JSON workers.
 **Why it matters:** this decides whether the gym agent needs its own
 BAND registration and wrapper from day one, or can stay a plain
 `handle()` function until a coordinator exists.
+
+**Answer (14 Nov review):** no wrapper of its own. Mario builds one shared
+`band_adapter` module that parses, calls `handle()`, posts and retries, so
+the gym agent is just `handle()`. Mario registers all the seats under one
+BAND account if BAND allows it; that is confirmed in the first round trip.
 
 ## 7. Cognee account is shared — confirm the dataset is targeted by UUID, not name
 
@@ -140,3 +146,7 @@ not carry real coordinates.
 (or near the meetings before check-in)." Without a reliable stay
 location, it may need to anchor on meeting locations for longer than the
 plan assumes.
+
+**Answer (14 Nov review):** Rohan decides the stay data source, so a real
+stay location may not exist. Until a stay is picked, the gym agent works per
+zone from the request's `zones` and `anchors` (see `docs/PLAN.md`).

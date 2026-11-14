@@ -21,7 +21,7 @@ v1 assumptions, all editable:
 - One city, one stay, one itinerary. The stay runs from Tuesday check-in to Thursday check-out (two nights), and a meeting before check-in doesn't constrain where it is.
 - The budget is one $1,000 total for the stay plus transport. For now only the stay price counts against it, because transport cost isn't calculated yet. The Stay agent gets the budget and returns no stay priced above it. Food and gym prices are shown but not budgeted.
 - Transport means the trips between the stay and the meetings and between meetings. The Routing seat gives travel times for walking, transit and driving, and the Concierge proposes the best option for each trip by time.
-- Stay prices are totals including fees and taxes.
+- Stay prices are totals including fees and taxes. A total whose fee basis the site doesn't show is labelled `card_total_fees_unknown` in `cost.basis`. The budget check adds a fee reserve (a percentage the team picks) to such a total, and the Verifier answers `warn`.
 - If nothing fits the budget, the Concierge widens the zone or the budget and says so on screen.
 
 Demo trip (New York), Tue 17 Nov to Thu 19 Nov. Each meeting lasts one hour.
@@ -111,7 +111,7 @@ Routing (Google Maps) is a seat: any seat asks it for travel times by message. W
 | Stay pick: the shortlisted or chosen stay's location and commute times | Stay to Restaurant and Gym | Both search around the stay for mornings and evenings |
 | Workout slot: day, start, end and place | Gym to Restaurant | The Restaurant agent sets its dinner window and area around the workout |
 | Stay shortlist: a ranked list of stays within the budget, with total price, commute times and the factor that decided each placement | Stay to Concierge | The Concierge adds the best transport mode by time for each trip, checks the top stay against the budget, arbitrates ties and conflicts, and asks for cheaper options if it's over |
-| Preference learned: key, value and evidence | Any agent to its peers, then to the profile | Peers use it in the same run; Cognee keeps it for later runs |
+| Preference learned: key, value and evidence | Any agent to the Concierge and the specialists it affects | The affected agents use it in the same run; the Concierge is the only one that writes it to Cognee, for later runs |
 | Conflict: which rule broke and on which item | Verifier to the owning agent | The owner revises and posts again |
 | Route request: origin, destination and time | Any seat to Routing | Routing replies with travel times for walking, transit and driving |
 
@@ -139,7 +139,7 @@ The Stay agent ranks the stays, and the Concierge only gates and arbitrates. The
 
 The Concierge checks the top stay against the budget, resolves ties and conflicts (for example, the best gym zone is a 40-minute commute while the best commute zone has no gym), and explains the trade-off to the user. Only the commute weight is set so far; the other weights, the workable-commute limit and the restaurant cap are first guesses to tune in the first full run.
 
-Each seat runs as its own process and acts only when mentioned. Build each agent as a plain function that takes a parsed message and returns the messages to send (`handle(message) -> messages`), with a thin BAND wrapper that does the parsing and posting, so it can be tested without BAND.
+Each seat runs as its own process and acts only when mentioned. Build each agent as a plain function that takes a parsed message and returns the messages to send (`handle(message) -> messages`), with one shared `band_adapter` module (built by Mario) that every seat imports: it parses the message, calls `handle()`, posts the answer and retries. Each person writes only `handle()`, so it can be tested without BAND.
 
 **Architecture for the Verifier, routing and memory** (agreed on 14 Nov)
 
@@ -151,7 +151,7 @@ Each seat runs as its own process and acts only when mentioned. Build each agent
 
 **BAND setup**
 
-- Register each seat at app.band.ai: Concierge, Stay, Restaurant, Gym, Verifier, Routing (Connect remote agent; description of at least 10 characters; avoid names like "Assistant" or "Bot").
+- Mario registers each seat at app.band.ai under one account, if BAND allows it (unverified: confirm in the first round trip), so teammates need no contact requests between their seats: Concierge, Stay, Restaurant, Gym, Verifier, Routing (Connect remote agent; description of at least 10 characters; avoid names like "Assistant" or "Bot"). Each owner gets their seat's key privately.
 - The API key shows once. Keep `agent_config.yaml` and `.env` out of git.
 - Python: `uv add "band-sdk[langgraph]"` installs the latest release (9.2.1 on 13 Nov; the quickstart showed 9.1.0). The SDK shipped three major versions in two weeks, so check the changelog if something breaks. Connect with `Agent.from_config("name", adapter=...)`. A plain-code seat such as the Verifier or Routing uses `LangGraphAdapter` with a graph that has one non-LLM node; LLM seats add a model extra such as `[anthropic]`.
 - An agent receives only messages that mention it, and it must first be added to the room as a participant.
@@ -165,7 +165,7 @@ Four people, one agent each plus the orchestrator. All three specialists follow 
 | Rohan | Stay agent (one site for now: Booking.com or Airbnb, whichever the data spike supports) and the shared page reader (Keenable fetch, then SIE extract and score) | A stub that answers a request with a valid proposal message (fixture stays) within about 45 minutes, then a first page reader, then live data |
 | Jwalin | Restaurant agent | The same stub, then live results through Rohan's page reader |
 | Prathik | Gym agent | The same stub, then live results through Rohan's page reader |
-| Mario | Orchestrator: Concierge seat (transport proposal, budget check, arbitration), BAND wiring, shared schema and trip state, Routing seat, Verifier checks, Cognee glue (preferences, a copy of the trip state, city facts, agent traces), secrets and credits (Google billing, Keenable, Cognee, BAND, SIE) | The accounts and keys in the first 30 minutes, then the shared JSON message models with example messages, and one @mention round trip that carries a validated message |
+| Mario | Orchestrator: Concierge seat (transport proposal, budget check, arbitration), BAND wiring (the shared `band_adapter` module), shared schema and trip state, Routing seat, Verifier checks, Cognee glue (preferences, a copy of the trip state, city facts, agent traces), secrets and credits (Google billing, Keenable, Cognee, BAND, SIE) | The accounts and keys in the first 30 minutes, then the shared JSON message models with example messages, and one @mention round trip that carries a validated message |
 
 Shared work and who owns it:
 
@@ -179,7 +179,7 @@ Shared work and who owns it:
 | Rehearse the New York demo trip end to end | A real run beats a polished demo | Mario |
 | Cost ledger and lesson writer (extensions) | Rubrics: small-model swarm, and memory that learns | Jwalin or Prathik, once their agents work |
 
-Rohan has the riskiest data path and now the page reader, so the reader has to land early. Until it does, Jwalin and Prathik can use Keenable's fetch with a prompt as a stand-in. Mario owns the most (Concierge, Routing seat, Verifier, Cognee glue), so the cost ledger and the lesson writer are extensions for Jwalin or Prathik. If the team falls behind, cut in this order: the extensions, the next-trip memory demo, then the Gym agent (the Restaurant and Stay agents still show peer messaging). Never cut the Verifier gate or the peer messages.
+Rohan has the riskiest data path and now the page reader, so the reader has to land early. Until it does, Jwalin and Prathik can use Keenable's fetch with a prompt as a stand-in. Mario owns the most (Concierge, Routing seat, Verifier, Cognee glue), so the cost ledger and the lesson writer are extensions for Jwalin or Prathik. If the team falls behind, cut in this order: the extensions, then the Gym agent's live data (keep its stub, because its `workout_slot` message is what the demo shows). Keep the next-trip memory demo: shared memory that learns is a scored rubric line. Never cut the Verifier gate or the peer messages.
 
 ## How agents share information
 
@@ -193,7 +193,8 @@ Every machine message between the Concierge and the specialists is one JSON obje
   "type": "request",
   "message_id": "6f1c2a52-6d0e-4c1b-9a53-1f0f6b2a9e10",
   "reply_to": null,
-  "trip_id": "nyc-2026-11-17",
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
   "state_version": 2,
   "from": "concierge",
   "to": ["restaurant"],
@@ -222,7 +223,8 @@ Every machine message between the Concierge and the specialists is one JSON obje
 | type | One of the message types below |
 | message\_id | A unique id (UUID) |
 | reply\_to | The message\_id this answers, or null |
-| trip\_id | The trip, which is also its Cognee session id |
+| trip\_id | The trip: the BAND room id or a UUID, never built from the city and date. It is also the trip's Cognee session id |
+| user\_id | The BAND user the trip belongs to. It keys the per-user profile and the Cognee dataset names |
 | state\_version | The version of the trip state this message was built on. The Concierge raises it on every change |
 | from, to | Seat names: concierge, stay, restaurant, gym, verifier, routing. to is a list |
 | sent\_at | ISO 8601 timestamp with an offset |
@@ -246,7 +248,7 @@ Every machine message between the Concierge and the specialists is one JSON obje
 | route\_request | Any seat to Routing | origin, destination, depart\_at, modes |
 | route\_reply | Routing to the requester | travel minutes per mode, or an error |
 
-Each entry in a `proposal`'s `items` carries `item_id`, `slot_id`, `name`, `address`, `location_precision (exact or zone), lat`, `lng`, `when` (date, start, end), `cost` (currency, amount, basis), `fit` (reason and the profile fields used), `hours`, `source` (url and `fetched_at`), `reader` (model and whether it escalated) and a dedupe key. Stays add commute times and the free-cancel deadline when the site shows one.
+Each entry in a `proposal`'s `items` carries `item_id`, `slot_id`, `name`, `address`, `location_precision (exact or zone), lat`, `lng`, `when` (date, start, end), `cost` (currency, amount, basis; a stay total with no fee detail uses `card_total_fees_unknown`), `fit` (reason and the profile fields used), `hours`, `source` (url and `fetched_at`), `reader` (model and whether it escalated) and a dedupe key. Stays add commute times and the free-cancel deadline when the site shows one.
 
 **Example proposal** (Restaurant to Concierge and Verifier; illustrative values)
 
@@ -256,7 +258,8 @@ Each entry in a `proposal`'s `items` carries `item_id`, `slot_id`, `name`, `addr
   "type": "proposal",
   "message_id": "b7d0c9ae-3f0a-4e43-8d1e-3a4a7b3f5c21",
   "reply_to": "6f1c2a52-6d0e-4c1b-9a53-1f0f6b2a9e10",
-  "trip_id": "nyc-2026-11-17",
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
   "state_version": 2,
   "from": "restaurant",
   "to": ["concierge", "verifier"],
@@ -331,11 +334,11 @@ All three specialists find pages with Keenable and read them with Superlinked SI
 
 - **Airbnb:** Keenable `fetch_page_content` with `live` set to true on an Airbnb search URL (check-in and check-out dates, one adult, USD) returned about ten cards with exact-date totals such as "$159 for 2 nights", plus a rating, review count, bed and bath counts and a tagline, in one to two seconds. No CAPTCHA, login or consent wall appeared. Cards have no listing URL and no street address, and detail pages showed no price, so fee basis, taxes and cancellation terms are unknown.
 - **Map bounds give zones:** adding `search_by_map=true`, `zoom=14` and `ne_lat`, `ne_lng`, `sw_lat`, `sw_lng` to the URL returned cards for that box, labelled by neighborhood (Chelsea, TriBeCa, The Financial District) with landmarks in the tagline. So query one box per candidate zone from the routing tool, and treat each card's location as its zone plus the tagline landmark.
-- **Booking.com:** the search page showed property names but no usable prices, only a few sponsored hotels with very high totals. Detail pages timed out or showed no price, and identical calls gave different results. Don't build on it.
+- **Booking.com:** the search page showed property names but no usable prices, only a few sponsored hotels with very high totals. Detail pages timed out or showed no price, and identical calls gave different results. Rohan picks the site; this test favoured Airbnb.
 - **Skip Keenable's `prompt` option on these pages:** it returned generic names and null fees. Fetch the raw text and parse it with SIE.
 - **Filters:** keep only cards that say "for 2 nights" (nearby dates appear with other lengths), and drop cards outside Manhattan (one result was in Union City, New Jersey).
 
-Order to try: the Airbnb map-box fetch first; a hotel-price API (Amadeus, SerpApi's Google Hotels or Booking's Demand API) if the demo needs named listings with fees and cancellation terms; a cached snapshot, labelled as cached, as the last resort. Search for candidates first, store stable facts in Cognee, and keep to the shortlist.
+Order to try: the Airbnb map-box fetch first; a hotel-price API (Amadeus, SerpApi's Google Hotels or Booking's Demand API) if the demo needs named listings with fees and cancellation terms; a cached snapshot, labelled as cached, as the last resort. Search for candidates first, store stable facts in Cognee, and keep to the shortlist. Rohan decides the order: if the Airbnb data is too complicated to fit the proposal schema (no street address, no listing URL), he can skip it.
 
 **Restaurants and gyms (Jwalin, Prathik).** Run the page reader on each candidate's own page. Ask for what the user's preferences need: opening hours, dietary options on the menu, price level, and for gyms the class timetable and day-pass price. Hours and prices come from page text, so they can be missing or stale; the Verifier flags anything SIE could not read.
 
@@ -378,7 +381,7 @@ Run the cheapest step that works, escalate only when a check fails, and log ever
 
 Cognee is how the agents remember each user and get better over time. It stores user preferences, the current trip, shared city facts and every agent's traces. An optional lesson writer (an extension) turns each trip into lessons, and Cognee stores those too.
 
-- **User preferences (personal scope):** dietary needs, cuisines, price comfort, gym types, preferred workout times, stay preferences, transport mode, past picks and feedback. Every agent reads them and writes what it learns.
+- **User preferences (personal scope):** dietary needs, cuisines, price comfort, gym types, preferred workout times, stay preferences, transport mode, past picks and feedback. Every agent reads them. An agent that learns a preference sends a `preference_learned` message, which the other agents use in the same run. The Concierge is the only writer to Cognee, and it writes the preference to the trip session with `self_improvement` off. Preferences move into permanent memory between trips, when `improve` runs.
 - **Trip state copy (session memory):** anchors, time windows, budget and the stay price so far, each agent's shortlist and open conflicts. The messages carry the live state; Cognee keeps a copy so a late-joining agent or a later run can recall it.
 - **City facts (shared scope):** place facts, hours, price levels, neighborhood traits, commute matrices. Store each with its source URL and `fetched_at`, and expire prices.
 - **Agent traces and lessons (lessons are an extension):** every search, page read, Verifier conflict and user accept or reject is logged to the trip session as an entry. A lesson writer (a small model, run after each trip) turns the run into explicit rules as plain text, for example which Keenable queries returned usable pages, which fields SIE missed on which kind of page, and what the user accepted or rejected and why. Cognee stores the rules. Before its next search, an agent recalls its lessons and uses them to shape that search: query wording, which sources to try first or skip, which fields to double-check. A lesson that doesn't change a search isn't kept. Cognee's `improve` distillation was too weak to rely on (see below).
@@ -391,13 +394,13 @@ Cognee is how the agents remember each user and get better over time. It stores 
 
 | Call | What it does today | How we use it |
 | --- | --- | --- |
-| `remember` | With no `session_id`, stores data as permanent graph memory: it ingests, builds the graph, then runs `improve`. With a `session_id`, writes to a fast session cache keyed by user and session, and bridges it into the permanent graph in the background unless `self_improvement` is off | Preferences and city facts go in as permanent memory; a copy of each trip's state and the agent steps go in as session entries |
+| `remember` | With no `session_id`, stores data as permanent graph memory: it ingests, builds the graph, then runs `improve`. With a `session_id`, writes to a fast session cache keyed by user and session, and bridges it into the permanent graph in the background unless `self_improvement` is off | City facts go in as permanent memory. Preferences learned in a run, a copy of each trip's state and the agent steps go in as session entries, and the preferences are bridged to permanent memory between trips |
 | `recall` | Searches the session cache first, then the permanent graph, and tags each result `session` or `graph`. `scope=["trace"]` searches recorded agent traces; `scope=["session_first"]` checks the session before the graph | Agents read preferences, city facts and their own past lessons before each search |
 | `improve` | Bridges sessions into the permanent graph, turns agent trace steps into documents, distills lessons under `session_learnings`, re-weights graph edges from feedback and flags conflicting facts. Tested on 14 Nov: 20 to 80 s per call, one generic lesson after the first run and none after later runs, feedback ignored | Run it between trips, never in a request, to bridge session text into the graph; don't rely on its lessons |
 
 What this means for our setup:
 
-- **One Cognee user for the team.** Session entries are scoped to the user, so the same session id under two users isn't shared. A shared dataset has to be targeted by its UUID; passing another owner's name creates your own dataset. Use one Cognee Cloud account and key for all agents.
+- **One Cognee user for the team.** Session entries are scoped to the user, so the same session id under two users isn't shared. A shared dataset has to be targeted by its UUID; passing another owner's name creates your own dataset. Use one Cognee Cloud account and key for all agents. Because every traveler shares that one Cognee user, per-user privacy rests on naming (the `user_id` in dataset and entry names), not on Cognee's own scoping.
 - **One session per trip,** bound to that trip's dataset. Sessions expire after 7 days by default.
 - **Several agents can write to one session at once.** In a test, three agents wrote 18 of 18 entries with no losses or errors, in one shared session and in three separate ones. Entries carry no author, so each agent starts its entries with `agent=<name>`. Session detail returns only the last 20 QA and 20 trace entries, so read a long session through `recall`.
 - **`improve` is slow and its lessons are weak.** It takes 20 to 80 s per call. On this tenant it wrote one generic lesson after the first run (check venue pages, verify hours separately) and none after runs two and three, it ignored feedback fields, it skipped feedback weighting because the graph backend doesn't support it, and its preference edges did nothing.
@@ -424,7 +427,7 @@ All four partners now do real work: Keenable finds the pages, SIE reads them, Co
 | --- | --- | --- | --- |
 | BAND | Peer messages between agents, the Verifier gate, runtime recruiting, Band Desktop in the demo | Strong; plain-code seats are supported (quickstart) | Re-plan loops are capped at two rounds; the Routing seat adds one message per lookup |
 | Cognee | Preferences, a copy of the trip state, city facts and agent traces, stored and recalled; lessons are an extension | Storage and recall work (tested on 14 Nov); its automatic lessons were weak | Run `improve` between trips only; who writes lessons (extension) |
-| Keenable | Finds and fetches pages for all three agents, with dated results | Strong for restaurants, gyms and Airbnb search cards (tested on 14 Nov); Booking.com is not usable | Whether zone-level Airbnb cards are enough for the demo; a hotel-price API if not |
+| Keenable | Finds and fetches pages for all three agents, with dated results | Strong for restaurants, gyms and Airbnb search cards (tested on 14 Nov); Booking.com was not usable in the test | Whether zone-level Airbnb cards are enough for the demo; a hotel-price API if not |
 | Superlinked SIE | A small LLM reads every page into the schema; the reranker scores the items | Strong (tested on 16 pages on 14 Nov: 95% of fields right) | Credits per page (about 40); ground-check every extracted ZIP and number |
 
 **Judging criteria**
@@ -517,9 +520,11 @@ Likely questions:
 - **How is this cheaper than a normal LLM agent?** Keenable and SIE do the page finding and reading with small models, plain code does the checks, and a frontier model is used only to arbitrate and write the itinerary. The ledger (an extension) shows the split.
 - **Terms of service.** Booking and Airbnb restrict scraping. That's acceptable for a hackathon; production would need partner or affiliate APIs. Say so before judges ask.
 - **Privacy.** Itineraries are sensitive. Only city facts and agent lessons go to shared memory, and agents never see meeting names or attendees.
-- **What if live data fails?** Show the backup video and the cached snapshot, labelled as cached.
+- **What if live data fails?** Show the cached snapshot, labelled as cached.
 
 ## Open decisions
+
+The questions to settle before building the Gym agent are in [docs/GYM_AGENT_QUESTIONS.md](GYM_AGENT_QUESTIONS.md).
 
 Settled on 14 Nov:
 
@@ -527,13 +532,14 @@ Settled on 14 Nov:
 - One traveler in one room, with a stay from Tuesday check-in to Thursday check-out (two nights).
 - The Concierge proposes the best transport mode for each trip by travel time. Transport covers only trips between the stay and the meetings and between meetings.
 - The demo trip is New York, with one-hour meetings. The demo plans lunch and dinner on Tuesday and Wednesday and one workout each day.
-- Rohan picks the booking site, one for now.
+- Rohan picks the booking site, one for now, whichever the Stay agent prefers. If the Airbnb data is too complicated, he drops it.
 - The Verifier and the Routing component are plain-code BAND seats, and all communication goes through BAND.
 - Trip state travels as versioned JSON in the BAND messages, and Cognee keeps a copy.
 - The BAND SDK is the latest release, and all four teammates are in one BAND room.
 - The cost ledger, the lesson writer and the demo variations are extensions for Jwalin or Prathik.
 - SIE's base URL is `https://api.superlinked.com`. Mario holds the key, and it never goes in this document or the repo.
 - H Company is out, and there are no partner prizes, only the organizers' $750, $500 and $250 plus the $500 bonus challenge.
+- There is no backup video; if live data fails, the demo shows the cached snapshot, labelled as cached.
 
 Still open:
 
@@ -541,6 +547,8 @@ Still open:
 - [ ] Stay ranking weights (Rohan): commute has the heaviest weight; set the other weights, the workable-commute limit and the restaurant cap (about five) in the first full run.
 - [ ] Routing over BAND: confirm a route lookup round trip is fast enough, since every lookup is a message.
 - [ ] BAND message limits: the docs state no maximum length. Confirm in the first round trip that a full request and a full proposal arrive intact.
+- [ ] Fee reserve (Mario, with Rohan): the percentage the budget check adds when a stay total's fee basis is unknown.
+- [ ] BAND account (Mario): confirm in the first round trip that all six seats can be registered under one account.
 - [ ] Which partner team's agent do we hand off to (extension)? Not clear yet.
 
 ## Sources
