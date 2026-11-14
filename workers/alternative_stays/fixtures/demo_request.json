@@ -1,0 +1,19 @@
+{
+  "type": "stay.search.v1",
+  "request_id": "demo-nyc-001",
+  "destination": "New York City, NY, United States",
+  "check_in": "2027-01-20",
+  "check_out": "2027-01-24",
+  "guests": 2,
+  "max_total_usd": 1000,
+  "required_amenities": ["kitchen", "wifi"],
+  "preferences": ["quiet", "dedicated workspace", "easy access to Midtown"],
+  "provided_listings": [
+    {
+      "name": "Sample user-submitted apartment (not a real listing)",
+      "source_url": "https://example.org/sample-stay",
+      "description": "Entire apartment with a kitchen and wifi. An extra cleaning fee may apply.",
+      "total_usd": 760
+    }
+  ]
+}
