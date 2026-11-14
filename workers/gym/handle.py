@@ -64,7 +64,15 @@ def handle(
         "preference_learned": _handle_preference_learned,
         "route_reply": _handle_route_reply,
     }
-    return dispatch[message["type"]](message, discover, fetch_and_classify, clock)
+    try:
+        return dispatch[message["type"]](message, discover, fetch_and_classify, clock)
+    except KeyError as exc:
+        # A well-formed envelope whose payload is missing a required field.
+        # docs/PLAN.md: "a bad message gets an error message" -- this worker
+        # must never crash on a malformed payload, only on code bugs.
+        return [envelope.error_for(message, "missing_field", [str(exc.args[0]) if exc.args else "unknown"])]
+    except (TypeError, ValueError, LookupError) as exc:
+        return [envelope.error_for(message, "handler_error", [str(exc)])]
 
 
 # ---------------------------------------------------------------------------
@@ -467,9 +475,34 @@ def _handle_conflict(message, discover, fetch_and_classify, clock) -> list[dict[
         payload={"agent": "gym", "items": [new_item], "usage": {"calls": 0, "credits": 0}},
     )
 
-    # Same slot_id/window means the date/time did not change, so no new
-    # workout_slot is needed -- only the place behind the existing slot did.
-    return [proposal]
+    # The time/slot_id didn't change, but the place did -- and Restaurant
+    # uses workout_slot.place to set its dinner area "around the workout"
+    # (docs/PLAN.md's message table), so a stale place would point it at the
+    # retired gym. Always resend workout_slot after a swap, not only when
+    # the time changes.
+    workout_slot = envelope.build_message(
+        type="workout_slot",
+        from_="gym",
+        to=["restaurant", "concierge"],
+        trip_id=trip_id,
+        user_id=user_id,
+        state_version=state_version,
+        reply_to=message["message_id"],
+        summary=f"Workout on {date} from {window.start.strftime('%H:%M')} near the replacement gym",
+        payload={
+            "date": date,
+            "start": window.start.strftime("%H:%M"),
+            "end": window.end.strftime("%H:%M"),
+            "place": {
+                "item_id": new_item_id,
+                "name": new_item["name"],
+                "lat": new_item["lat"],
+                "lng": new_item["lng"],
+            },
+        },
+    )
+
+    return [proposal, workout_slot]
 
 
 # ---------------------------------------------------------------------------
