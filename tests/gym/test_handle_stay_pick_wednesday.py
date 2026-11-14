@@ -36,5 +36,21 @@ def test_stay_pick_resolves_the_wednesday_slot():
     assert workout_slots[0]["reply_to"] == stay_pick["message_id"]
 
     place = payload["place"]
-    assert abs(place["lat"] - stay_pick["payload"]["lat"]) < 0.02
-    assert abs(place["lng"] - stay_pick["payload"]["lng"]) < 0.02
+    stay_lat, stay_lng = stay_pick["payload"]["lat"], stay_pick["payload"]["lng"]
+
+    # Tight tolerance against the stay: near_stay.json's gyms sit within
+    # about 0.001 degrees of it.
+    assert abs(place["lat"] - stay_lat) < 0.005
+    assert abs(place["lng"] - stay_lng) < 0.005
+
+    # And it must be the near_stay.json fixture, not a zone discovered
+    # for one of the meetings (meeting B sits in zone z1, about 0.03
+    # degrees from the stay -- far outside the tolerance above, but
+    # checked explicitly here so a wrong zone lookup fails loudly).
+    meeting_b = next(a for a in request["payload"]["anchors"] if a["id"] == "B")
+    dist_to_stay = (place["lat"] - stay_lat) ** 2 + (place["lng"] - stay_lng) ** 2
+    dist_to_meeting_b = (place["lat"] - meeting_b["lat"]) ** 2 + (place["lng"] - meeting_b["lng"]) ** 2
+    assert dist_to_stay < dist_to_meeting_b
+
+    near_stay_gyms = {g["name"] for g in _load("gyms", "near_stay.json")["gyms"]}
+    assert place["name"] in near_stay_gyms
