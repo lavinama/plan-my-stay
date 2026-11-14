@@ -1,0 +1,140 @@
+{
+  "$defs": {
+    "Mode": {
+      "description": "Travel modes the Routing seat answers for.",
+      "enum": [
+        "walking",
+        "transit",
+        "driving"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "StayOption": {
+      "description": "One stay in the Stay agent's ranked shortlist (and, when chosen, the trip's stay).",
+      "properties": {
+        "rank": {
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "deciding_factor": {
+          "title": "Deciding Factor",
+          "type": "string"
+        },
+        "stay_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Stay Id",
+          "type": "string"
+        },
+        "zone_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Zone Id",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "total_price": {
+          "minimum": 0,
+          "title": "Total Price",
+          "type": "number"
+        },
+        "currency": {
+          "default": "USD",
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "cost_basis": {
+          "default": "unknown",
+          "title": "Cost Basis",
+          "type": "string"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lng": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lng"
+        },
+        "commute_minutes": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "propertyNames": {
+              "$ref": "#/$defs/Mode"
+            },
+            "type": "object"
+          },
+          "default": {},
+          "title": "Commute Minutes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rank",
+        "deciding_factor",
+        "stay_id",
+        "zone_id",
+        "total_price"
+      ],
+      "title": "StayOption",
+      "type": "object"
+    }
+  },
+  "description": "Stay to Concierge: ranked stays priced within the budget. Empty means nothing fits (the Concierge widens).",
+  "properties": {
+    "stays": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/StayOption"
+      },
+      "title": "Stays",
+      "type": "array"
+    }
+  },
+  "title": "StayShortlistPayload",
+  "type": "object"
+}

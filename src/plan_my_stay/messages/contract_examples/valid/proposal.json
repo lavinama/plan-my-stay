@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "type": "proposal",
+  "message_id": "b7d0c9ae-3f0a-4e43-8d1e-3a4a7b3f5c21",
+  "reply_to": "6f1c2a52-6d0e-4c1b-9a53-1f0f6b2a9e10",
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "restaurant",
+  "to": [
+    "concierge",
+    "verifier"
+  ],
+  "sent_at": "2026-11-14T16:07:12-05:00",
+  "summary": "1 dinner option for Tue 17 Nov in zone z1",
+  "payload": {
+    "agent": "restaurant",
+    "items": [
+      {
+        "item_id": "rest-urban-vegan-kitchen",
+        "slot_id": "s1",
+        "name": "Urban Vegan Kitchen",
+        "address": {
+          "street": "265 W 23rd St",
+          "city": "New York",
+          "zip": "10011"
+        },
+        "location_precision": "exact",
+        "lat": 40.7445,
+        "lng": -73.9983,
+        "when": {
+          "date": "2026-11-17",
+          "start": "18:30",
+          "end": "19:45"
+        },
+        "cost": {
+          "currency": "USD",
+          "amount": null,
+          "basis": "unknown"
+        },
+        "fit": {
+          "reason": "Fully vegan menu; open until 22:00 on Tuesday",
+          "profile_fields": [
+            "diet"
+          ]
+        },
+        "hours": {
+          "Tue": "11:00-22:00"
+        },
+        "source": {
+          "url": "https://urbanvegankitchen.com",
+          "fetched_at": "2026-11-14T16:06:40-05:00"
+        },
+        "reader": {
+          "model": "Qwen/Qwen3.5-4B",
+          "escalated": false
+        },
+        "dedupe_key": "urban-vegan-kitchen|10011",
+        "commute_minutes": null,
+        "free_cancel_deadline": null
+      }
+    ],
+    "usage": {
+      "calls": 3,
+      "credits": 118.0
+    },
+    "state": null
+  }
+}

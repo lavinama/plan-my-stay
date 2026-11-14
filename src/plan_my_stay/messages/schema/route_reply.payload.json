@@ -1,0 +1,119 @@
+{
+  "$defs": {
+    "Mode": {
+      "description": "Travel modes the Routing seat answers for.",
+      "enum": [
+        "walking",
+        "transit",
+        "driving"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "Place": {
+      "description": "Where something is: an address for Routing to geocode, coordinates, or both.",
+      "properties": {
+        "address": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Address"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lng": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lng"
+        }
+      },
+      "title": "Place",
+      "type": "object"
+    }
+  },
+  "description": "Routing to the requester: travel minutes per mode, or an error.",
+  "properties": {
+    "minutes": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "minimum": 0,
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "default": {},
+      "propertyNames": {
+        "$ref": "#/$defs/Mode"
+      },
+      "title": "Minutes",
+      "type": "object"
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Error"
+    },
+    "origin": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Place"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "destination": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Place"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "title": "RouteReplyPayload",
+  "type": "object"
+}

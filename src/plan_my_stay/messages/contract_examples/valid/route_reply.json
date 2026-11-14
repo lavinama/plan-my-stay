@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "type": "route_reply",
+  "message_id": "00000000-0000-4000-8000-000000000012",
+  "reply_to": "00000000-0000-4000-8000-000000000011",
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "routing",
+  "to": [
+    "stay"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Route: 21 min walking, 12 transit, 9 driving",
+  "payload": {
+    "minutes": {
+      "walking": 21.0,
+      "transit": 12.0,
+      "driving": 9.0
+    },
+    "error": null,
+    "origin": {
+      "address": null,
+      "lat": 40.7465,
+      "lng": -74.0014
+    },
+    "destination": {
+      "address": "368 9th Ave, New York, NY 10001",
+      "lat": 40.7502,
+      "lng": -73.9987
+    }
+  }
+}

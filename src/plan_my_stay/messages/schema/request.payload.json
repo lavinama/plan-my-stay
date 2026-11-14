@@ -1,0 +1,419 @@
+{
+  "$defs": {
+    "Anchor": {
+      "description": "A fixed point: a meeting's place and time window. Agents never see meeting names or attendees.",
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "lat": {
+          "maximum": 90,
+          "minimum": -90,
+          "title": "Lat",
+          "type": "number"
+        },
+        "lng": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Lng",
+          "type": "number"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "counts_for_stay": {
+          "title": "Counts For Stay",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "lat",
+        "lng",
+        "start",
+        "end",
+        "counts_for_stay"
+      ],
+      "title": "Anchor",
+      "type": "object"
+    },
+    "Bounds": {
+      "properties": {
+        "ne": {
+          "$ref": "#/$defs/LatLng"
+        },
+        "sw": {
+          "$ref": "#/$defs/LatLng"
+        }
+      },
+      "required": [
+        "ne",
+        "sw"
+      ],
+      "title": "Bounds",
+      "type": "object"
+    },
+    "Budget": {
+      "properties": {
+        "currency": {
+          "default": "USD",
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "amount": {
+          "exclusiveMinimum": 0,
+          "title": "Amount",
+          "type": "number"
+        }
+      },
+      "required": [
+        "amount"
+      ],
+      "title": "Budget",
+      "type": "object"
+    },
+    "Constraints": {
+      "additionalProperties": true,
+      "properties": {
+        "max_walk_minutes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Walk Minutes"
+        }
+      },
+      "title": "Constraints",
+      "type": "object"
+    },
+    "Dates": {
+      "properties": {
+        "check_in": {
+          "format": "date",
+          "title": "Check In",
+          "type": "string"
+        },
+        "check_out": {
+          "format": "date",
+          "title": "Check Out",
+          "type": "string"
+        }
+      },
+      "required": [
+        "check_in",
+        "check_out"
+      ],
+      "title": "Dates",
+      "type": "object"
+    },
+    "LatLng": {
+      "properties": {
+        "lat": {
+          "maximum": 90,
+          "minimum": -90,
+          "title": "Lat",
+          "type": "number"
+        },
+        "lng": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Lng",
+          "type": "number"
+        }
+      },
+      "required": [
+        "lat",
+        "lng"
+      ],
+      "title": "LatLng",
+      "type": "object"
+    },
+    "Mode": {
+      "description": "Travel modes the Routing seat answers for.",
+      "enum": [
+        "walking",
+        "transit",
+        "driving"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "Profile": {
+      "additionalProperties": true,
+      "description": "What the shared profile remembers. Extra keys are kept, because agents learn new preferences at run time.",
+      "properties": {
+        "diet": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Diet",
+          "type": "array"
+        },
+        "cuisines": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Cuisines",
+          "type": "array"
+        },
+        "gym_types": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Gym Types",
+          "type": "array"
+        },
+        "workout_times": {
+          "default": [],
+          "items": {
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "type": "string"
+          },
+          "title": "Workout Times",
+          "type": "array"
+        },
+        "stay_preferences": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Stay Preferences",
+          "type": "array"
+        },
+        "price_comfort": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Price Comfort"
+        },
+        "transport_mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Mode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Profile",
+      "type": "object"
+    },
+    "Seat": {
+      "description": "The six BAND seats. `to` and `from` in every message use these names.",
+      "enum": [
+        "concierge",
+        "stay",
+        "restaurant",
+        "gym",
+        "verifier",
+        "routing"
+      ],
+      "title": "Seat",
+      "type": "string"
+    },
+    "Slot": {
+      "description": "A time window an agent should fill: a meal or a workout.",
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "pattern": "^[a-z][a-z_]*$",
+          "title": "Kind",
+          "type": "string"
+        },
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "window": {
+          "$ref": "#/$defs/Window"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "date",
+        "window"
+      ],
+      "title": "Slot",
+      "type": "object"
+    },
+    "Window": {
+      "properties": {
+        "start": {
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "title": "End",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Window",
+      "type": "object"
+    },
+    "Zone": {
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "bounds": {
+          "$ref": "#/$defs/Bounds"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "bounds"
+      ],
+      "title": "Zone",
+      "type": "object"
+    }
+  },
+  "description": "Concierge to Stay, Restaurant, Gym.",
+  "properties": {
+    "city": {
+      "title": "City",
+      "type": "string"
+    },
+    "dates": {
+      "$ref": "#/$defs/Dates"
+    },
+    "guests": {
+      "default": 1,
+      "minimum": 1,
+      "title": "Guests",
+      "type": "integer"
+    },
+    "anchors": {
+      "items": {
+        "$ref": "#/$defs/Anchor"
+      },
+      "title": "Anchors",
+      "type": "array"
+    },
+    "zones": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Zone"
+      },
+      "title": "Zones",
+      "type": "array"
+    },
+    "slots": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Slot"
+      },
+      "title": "Slots",
+      "type": "array"
+    },
+    "profile": {
+      "$ref": "#/$defs/Profile",
+      "default": {
+        "diet": [],
+        "cuisines": [],
+        "gym_types": [],
+        "workout_times": [],
+        "stay_preferences": [],
+        "price_comfort": null,
+        "transport_mode": null
+      }
+    },
+    "constraints": {
+      "$ref": "#/$defs/Constraints",
+      "default": {
+        "max_walk_minutes": null
+      }
+    },
+    "budget": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Budget"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "roster": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Seat"
+      },
+      "title": "Roster",
+      "type": "array"
+    },
+    "round": {
+      "default": 0,
+      "maximum": 2,
+      "minimum": 0,
+      "title": "Round",
+      "type": "integer"
+    },
+    "response_type": {
+      "default": "proposal",
+      "enum": [
+        "proposal",
+        "stay_shortlist"
+      ],
+      "title": "Response Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "city",
+    "dates",
+    "anchors"
+  ],
+  "title": "RequestPayload",
+  "type": "object"
+}

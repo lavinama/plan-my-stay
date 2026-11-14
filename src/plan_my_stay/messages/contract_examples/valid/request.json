@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0",
+  "type": "request",
+  "message_id": "6f1c2a52-6d0e-4c1b-9a53-1f0f6b2a9e10",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "concierge",
+  "to": [
+    "restaurant"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Find vegetarian dinner options for Tue 17 Nov",
+  "payload": {
+    "city": "New York, NY",
+    "dates": {
+      "check_in": "2026-11-17",
+      "check_out": "2026-11-19"
+    },
+    "guests": 1,
+    "anchors": [
+      {
+        "id": "A",
+        "lat": 40.7066,
+        "lng": -74.0053,
+        "start": "2026-11-17T11:00:00-05:00",
+        "end": "2026-11-17T12:00:00-05:00",
+        "counts_for_stay": false
+      },
+      {
+        "id": "B",
+        "lat": 40.7502,
+        "lng": -73.9987,
+        "start": "2026-11-17T16:00:00-05:00",
+        "end": "2026-11-17T17:00:00-05:00",
+        "counts_for_stay": true
+      }
+    ],
+    "zones": [
+      {
+        "id": "z1",
+        "name": "Chelsea",
+        "bounds": {
+          "ne": {
+            "lat": 40.756,
+            "lng": -73.99
+          },
+          "sw": {
+            "lat": 40.738,
+            "lng": -74.01
+          }
+        }
+      }
+    ],
+    "slots": [
+      {
+        "id": "s1",
+        "kind": "dinner",
+        "date": "2026-11-17",
+        "window": {
+          "start": "17:30",
+          "end": "21:00"
+        }
+      }
+    ],
+    "profile": {
+      "diet": [
+        "vegetarian"
+      ],
+      "cuisines": [
+        "Mediterranean",
+        "Indian"
+      ],
+      "gym_types": [],
+      "workout_times": [],
+      "stay_preferences": [],
+      "price_comfort": null,
+      "transport_mode": null
+    },
+    "constraints": {
+      "max_walk_minutes": 15
+    },
+    "budget": null,
+    "roster": [],
+    "round": 0,
+    "response_type": "proposal"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "description": "Any seat to the sender of a message it could not accept.",
+  "properties": {
+    "code": {
+      "title": "Code",
+      "type": "string"
+    },
+    "bad_message_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Bad Message Id"
+    },
+    "fields": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Fields",
+      "type": "array"
+    }
+  },
+  "required": [
+    "code"
+  ],
+  "title": "ErrorPayload",
+  "type": "object"
+}

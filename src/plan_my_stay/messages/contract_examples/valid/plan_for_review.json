@@ -1,0 +1,366 @@
+{
+  "schema_version": "1.0",
+  "type": "proposal",
+  "message_id": "00000000-0000-4000-8000-000000000013",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 3,
+  "from": "concierge",
+  "to": [
+    "verifier"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Merged plan for review (state_version 3)",
+  "payload": {
+    "agent": "concierge",
+    "items": [],
+    "usage": {
+      "calls": 0,
+      "credits": 0.0
+    },
+    "state": {
+      "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+      "user_id": "demo-user-1",
+      "state_version": 1,
+      "city": "New York, NY",
+      "check_in": "2026-11-17",
+      "check_out": "2026-11-19",
+      "guests": 1,
+      "anchors": [
+        {
+          "id": "A",
+          "lat": 40.7066,
+          "lng": -74.0053,
+          "start": "2026-11-17T11:00:00-05:00",
+          "end": "2026-11-17T12:00:00-05:00",
+          "counts_for_stay": false
+        },
+        {
+          "id": "B",
+          "lat": 40.7502,
+          "lng": -73.9987,
+          "start": "2026-11-17T16:00:00-05:00",
+          "end": "2026-11-17T17:00:00-05:00",
+          "counts_for_stay": true
+        },
+        {
+          "id": "C",
+          "lat": 40.7234,
+          "lng": -73.9991,
+          "start": "2026-11-18T10:00:00-05:00",
+          "end": "2026-11-18T11:00:00-05:00",
+          "counts_for_stay": true
+        }
+      ],
+      "zones": [
+        {
+          "id": "z1",
+          "name": "Chelsea",
+          "bounds": {
+            "ne": {
+              "lat": 40.756,
+              "lng": -73.99
+            },
+            "sw": {
+              "lat": 40.738,
+              "lng": -74.01
+            }
+          }
+        },
+        {
+          "id": "z2",
+          "name": "TriBeCa",
+          "bounds": {
+            "ne": {
+              "lat": 40.7262,
+              "lng": -73.9985
+            },
+            "sw": {
+              "lat": 40.7125,
+              "lng": -74.0125
+            }
+          }
+        },
+        {
+          "id": "z3",
+          "name": "Financial District",
+          "bounds": {
+            "ne": {
+              "lat": 40.716,
+              "lng": -73.9985
+            },
+            "sw": {
+              "lat": 40.701,
+              "lng": -74.02
+            }
+          }
+        }
+      ],
+      "slots": [
+        {
+          "id": "s1",
+          "kind": "dinner",
+          "date": "2026-11-17",
+          "window": {
+            "start": "17:30",
+            "end": "21:00"
+          }
+        },
+        {
+          "id": "s2",
+          "kind": "lunch",
+          "date": "2026-11-17",
+          "window": {
+            "start": "12:15",
+            "end": "15:00"
+          }
+        },
+        {
+          "id": "s3",
+          "kind": "workout",
+          "date": "2026-11-17",
+          "window": {
+            "start": "17:00",
+            "end": "20:00"
+          }
+        },
+        {
+          "id": "s4",
+          "kind": "workout",
+          "date": "2026-11-18",
+          "window": {
+            "start": "07:00",
+            "end": "08:30"
+          }
+        },
+        {
+          "id": "s5",
+          "kind": "lunch",
+          "date": "2026-11-18",
+          "window": {
+            "start": "11:30",
+            "end": "14:30"
+          }
+        },
+        {
+          "id": "s6",
+          "kind": "dinner",
+          "date": "2026-11-18",
+          "window": {
+            "start": "17:30",
+            "end": "21:00"
+          }
+        }
+      ],
+      "budget": {
+        "currency": "USD",
+        "amount": 1000.0
+      },
+      "profile": {
+        "diet": [
+          "vegetarian"
+        ],
+        "cuisines": [
+          "Mediterranean",
+          "Indian"
+        ],
+        "gym_types": [
+          "hiit"
+        ],
+        "workout_times": [
+          "07:00"
+        ],
+        "stay_preferences": [
+          "quiet street",
+          "private bathroom"
+        ],
+        "price_comfort": null,
+        "transport_mode": null
+      },
+      "roster": [
+        "stay",
+        "restaurant",
+        "gym"
+      ],
+      "round": 0,
+      "stay": {
+        "rank": 1,
+        "deciding_factor": "commute",
+        "stay_id": "stay-chelsea-1",
+        "zone_id": "z1",
+        "name": "Quiet Chelsea studio",
+        "total_price": 640.0,
+        "currency": "USD",
+        "cost_basis": "card_total_fees_unknown",
+        "lat": null,
+        "lng": null,
+        "commute_minutes": {
+          "B": {
+            "walking": 21.0,
+            "transit": 12.0,
+            "driving": 9.0
+          },
+          "C": {
+            "walking": 38.0,
+            "transit": 22.0,
+            "driving": 14.0
+          }
+        }
+      },
+      "stay_shortlist": [],
+      "entries": [
+        {
+          "agent": "gym",
+          "item": {
+            "item_id": "gym-example-hiit",
+            "slot_id": "s3",
+            "name": "Example HIIT Studio",
+            "address": {
+              "street": "1 Example Plaza",
+              "city": "New York",
+              "zip": "10001"
+            },
+            "location_precision": "exact",
+            "lat": 40.7488,
+            "lng": -73.9971,
+            "when": {
+              "date": "2026-11-17",
+              "start": "17:30",
+              "end": "18:15"
+            },
+            "cost": {
+              "currency": "USD",
+              "amount": 35.0,
+              "basis": "day_pass"
+            },
+            "fit": {
+              "reason": "HIIT classes; 17:30 class on Tuesdays",
+              "profile_fields": [
+                "gym_types"
+              ]
+            },
+            "hours": {
+              "Tue": "06:00-21:00"
+            },
+            "source": {
+              "url": "https://example-hiit.test/schedule",
+              "fetched_at": "2026-11-14T16:06:00-05:00"
+            },
+            "reader": {
+              "model": "Qwen/Qwen3.5-4B",
+              "escalated": false
+            },
+            "dedupe_key": "example-hiit-studio|10001",
+            "commute_minutes": null,
+            "free_cancel_deadline": null
+          }
+        },
+        {
+          "agent": "restaurant",
+          "item": {
+            "item_id": "rest-urban-vegan-kitchen",
+            "slot_id": "s1",
+            "name": "Urban Vegan Kitchen",
+            "address": {
+              "street": "265 W 23rd St",
+              "city": "New York",
+              "zip": "10011"
+            },
+            "location_precision": "exact",
+            "lat": 40.7445,
+            "lng": -73.9983,
+            "when": {
+              "date": "2026-11-17",
+              "start": "18:30",
+              "end": "19:45"
+            },
+            "cost": {
+              "currency": "USD",
+              "amount": null,
+              "basis": "unknown"
+            },
+            "fit": {
+              "reason": "Fully vegan menu; open until 22:00 on Tuesday",
+              "profile_fields": [
+                "diet"
+              ]
+            },
+            "hours": {
+              "Tue": "11:00-22:00"
+            },
+            "source": {
+              "url": "https://urbanvegankitchen.com",
+              "fetched_at": "2026-11-14T16:06:00-05:00"
+            },
+            "reader": {
+              "model": "Qwen/Qwen3.5-4B",
+              "escalated": false
+            },
+            "dedupe_key": "urban-vegan-kitchen|10011",
+            "commute_minutes": null,
+            "free_cancel_deadline": null
+          }
+        }
+      ],
+      "legs": [
+        {
+          "from_id": "A",
+          "to_id": "B",
+          "depart_at": "2026-11-17T12:00:00-05:00",
+          "minutes_by_mode": {
+            "walking": 70.0,
+            "transit": 25.0,
+            "driving": 20.0
+          },
+          "chosen_mode": "driving"
+        },
+        {
+          "from_id": "B",
+          "to_id": "gym-example-hiit",
+          "depart_at": "2026-11-17T17:05:00-05:00",
+          "minutes_by_mode": {
+            "walking": 4.0,
+            "transit": 8.0,
+            "driving": 6.0
+          },
+          "chosen_mode": "walking"
+        },
+        {
+          "from_id": "gym-example-hiit",
+          "to_id": "rest-urban-vegan-kitchen",
+          "depart_at": "2026-11-17T18:20:00-05:00",
+          "minutes_by_mode": {
+            "walking": 7.0,
+            "transit": 9.0,
+            "driving": 5.0
+          },
+          "chosen_mode": "driving"
+        },
+        {
+          "from_id": "rest-urban-vegan-kitchen",
+          "to_id": "stay",
+          "depart_at": "2026-11-17T19:50:00-05:00",
+          "minutes_by_mode": {
+            "walking": 6.0,
+            "transit": 6.0,
+            "driving": 4.0
+          },
+          "chosen_mode": "driving"
+        },
+        {
+          "from_id": "stay",
+          "to_id": "C",
+          "depart_at": "2026-11-18T09:00:00-05:00",
+          "minutes_by_mode": {
+            "walking": 38.0,
+            "transit": 22.0,
+            "driving": 14.0
+          },
+          "chosen_mode": "driving"
+        }
+      ],
+      "open_conflicts": []
+    }
+  }
+}

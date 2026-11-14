@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "type": "zone_fit",
+  "message_id": "00000000-0000-4000-8000-000000000003",
+  "reply_to": "6f1c2a52-6d0e-4c1b-9a53-1f0f6b2a9e10",
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "restaurant",
+  "to": [
+    "stay"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Chelsea: 7 vegetarian options within a short walk",
+  "payload": {
+    "zone_id": "z1",
+    "counts": {
+      "restaurants": 7,
+      "gyms": null
+    },
+    "top_items": [
+      {
+        "item_id": "rest-urban-vegan-kitchen",
+        "name": "Urban Vegan Kitchen",
+        "walk_minutes": 6.0,
+        "fits": true
+      }
+    ]
+  }
+}

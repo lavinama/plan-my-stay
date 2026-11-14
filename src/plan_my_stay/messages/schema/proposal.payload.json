@@ -1,0 +1,1076 @@
+{
+  "$defs": {
+    "Address": {
+      "properties": {
+        "street": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Street"
+        },
+        "city": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "City"
+        },
+        "zip": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zip"
+        }
+      },
+      "title": "Address",
+      "type": "object"
+    },
+    "Anchor": {
+      "description": "A fixed point: a meeting's place and time window. Agents never see meeting names or attendees.",
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "lat": {
+          "maximum": 90,
+          "minimum": -90,
+          "title": "Lat",
+          "type": "number"
+        },
+        "lng": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Lng",
+          "type": "number"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "counts_for_stay": {
+          "title": "Counts For Stay",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "lat",
+        "lng",
+        "start",
+        "end",
+        "counts_for_stay"
+      ],
+      "title": "Anchor",
+      "type": "object"
+    },
+    "Bounds": {
+      "properties": {
+        "ne": {
+          "$ref": "#/$defs/LatLng"
+        },
+        "sw": {
+          "$ref": "#/$defs/LatLng"
+        }
+      },
+      "required": [
+        "ne",
+        "sw"
+      ],
+      "title": "Bounds",
+      "type": "object"
+    },
+    "Budget": {
+      "properties": {
+        "currency": {
+          "default": "USD",
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "amount": {
+          "exclusiveMinimum": 0,
+          "title": "Amount",
+          "type": "number"
+        }
+      },
+      "required": [
+        "amount"
+      ],
+      "title": "Budget",
+      "type": "object"
+    },
+    "Conflict": {
+      "description": "A rule the plan broke, on which item, and how the owner could fix it.",
+      "properties": {
+        "rule": {
+          "title": "Rule",
+          "type": "string"
+        },
+        "item_id": {
+          "title": "Item Id",
+          "type": "string"
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "suggestion": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggestion"
+        }
+      },
+      "required": [
+        "rule",
+        "item_id",
+        "detail"
+      ],
+      "title": "Conflict",
+      "type": "object"
+    },
+    "Cost": {
+      "properties": {
+        "currency": {
+          "default": "USD",
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "amount": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Amount"
+        },
+        "basis": {
+          "default": "unknown",
+          "title": "Basis",
+          "type": "string"
+        }
+      },
+      "title": "Cost",
+      "type": "object"
+    },
+    "Fit": {
+      "properties": {
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "profile_fields": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Profile Fields",
+          "type": "array"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "Fit",
+      "type": "object"
+    },
+    "LatLng": {
+      "properties": {
+        "lat": {
+          "maximum": 90,
+          "minimum": -90,
+          "title": "Lat",
+          "type": "number"
+        },
+        "lng": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Lng",
+          "type": "number"
+        }
+      },
+      "required": [
+        "lat",
+        "lng"
+      ],
+      "title": "LatLng",
+      "type": "object"
+    },
+    "Leg": {
+      "description": "One trip between two points, with Routing's times and the mode the Concierge proposed (the fastest).",
+      "properties": {
+        "from_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "From Id",
+          "type": "string"
+        },
+        "to_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "To Id",
+          "type": "string"
+        },
+        "depart_at": {
+          "format": "date-time",
+          "title": "Depart At",
+          "type": "string"
+        },
+        "minutes_by_mode": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "propertyNames": {
+            "$ref": "#/$defs/Mode"
+          },
+          "title": "Minutes By Mode",
+          "type": "object"
+        },
+        "chosen_mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Mode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "from_id",
+        "to_id",
+        "depart_at",
+        "minutes_by_mode"
+      ],
+      "title": "Leg",
+      "type": "object"
+    },
+    "LocationPrecision": {
+      "enum": [
+        "exact",
+        "zone"
+      ],
+      "title": "LocationPrecision",
+      "type": "string"
+    },
+    "Mode": {
+      "description": "Travel modes the Routing seat answers for.",
+      "enum": [
+        "walking",
+        "transit",
+        "driving"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "PlanEntry": {
+      "description": "A chosen specialist item and the seat that owns it, so a conflict goes to the right agent.",
+      "properties": {
+        "agent": {
+          "$ref": "#/$defs/Seat"
+        },
+        "item": {
+          "$ref": "#/$defs/ProposalItem"
+        }
+      },
+      "required": [
+        "agent",
+        "item"
+      ],
+      "title": "PlanEntry",
+      "type": "object"
+    },
+    "Profile": {
+      "additionalProperties": true,
+      "description": "What the shared profile remembers. Extra keys are kept, because agents learn new preferences at run time.",
+      "properties": {
+        "diet": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Diet",
+          "type": "array"
+        },
+        "cuisines": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Cuisines",
+          "type": "array"
+        },
+        "gym_types": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Gym Types",
+          "type": "array"
+        },
+        "workout_times": {
+          "default": [],
+          "items": {
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "type": "string"
+          },
+          "title": "Workout Times",
+          "type": "array"
+        },
+        "stay_preferences": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Stay Preferences",
+          "type": "array"
+        },
+        "price_comfort": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Price Comfort"
+        },
+        "transport_mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Mode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Profile",
+      "type": "object"
+    },
+    "ProposalItem": {
+      "properties": {
+        "item_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Item Id",
+          "type": "string"
+        },
+        "slot_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Slot Id"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "location_precision": {
+          "$ref": "#/$defs/LocationPrecision",
+          "default": "exact"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lng": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lng"
+        },
+        "when": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/When"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cost": {
+          "$ref": "#/$defs/Cost",
+          "default": {
+            "currency": "USD",
+            "amount": null,
+            "basis": "unknown"
+          }
+        },
+        "fit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fit"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "hours": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "pattern": "^([01]\\d|2[0-3]):[0-5]\\d-([01]\\d|2[0-3]):[0-5]\\d$",
+                    "type": "string"
+                  },
+                  {
+                    "items": {
+                      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d-([01]\\d|2[0-3]):[0-5]\\d$",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                ]
+              },
+              "propertyNames": {
+                "enum": [
+                  "Mon",
+                  "Tue",
+                  "Wed",
+                  "Thu",
+                  "Fri",
+                  "Sat",
+                  "Sun"
+                ]
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Hours"
+        },
+        "source": {
+          "$ref": "#/$defs/Source"
+        },
+        "reader": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Reader"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "dedupe_key": {
+          "title": "Dedupe Key",
+          "type": "string"
+        },
+        "commute_minutes": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "propertyNames": {
+                  "$ref": "#/$defs/Mode"
+                },
+                "type": "object"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commute Minutes"
+        },
+        "free_cancel_deadline": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Free Cancel Deadline"
+        }
+      },
+      "required": [
+        "item_id",
+        "name",
+        "source",
+        "dedupe_key"
+      ],
+      "title": "ProposalItem",
+      "type": "object"
+    },
+    "Reader": {
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "escalated": {
+          "default": false,
+          "title": "Escalated",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "title": "Reader",
+      "type": "object"
+    },
+    "Seat": {
+      "description": "The six BAND seats. `to` and `from` in every message use these names.",
+      "enum": [
+        "concierge",
+        "stay",
+        "restaurant",
+        "gym",
+        "verifier",
+        "routing"
+      ],
+      "title": "Seat",
+      "type": "string"
+    },
+    "Slot": {
+      "description": "A time window an agent should fill: a meal or a workout.",
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "pattern": "^[a-z][a-z_]*$",
+          "title": "Kind",
+          "type": "string"
+        },
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "window": {
+          "$ref": "#/$defs/Window"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "date",
+        "window"
+      ],
+      "title": "Slot",
+      "type": "object"
+    },
+    "Source": {
+      "properties": {
+        "url": {
+          "title": "Url",
+          "type": "string"
+        },
+        "fetched_at": {
+          "format": "date-time",
+          "title": "Fetched At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url",
+        "fetched_at"
+      ],
+      "title": "Source",
+      "type": "object"
+    },
+    "StayOption": {
+      "description": "One stay in the Stay agent's ranked shortlist (and, when chosen, the trip's stay).",
+      "properties": {
+        "rank": {
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "deciding_factor": {
+          "title": "Deciding Factor",
+          "type": "string"
+        },
+        "stay_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Stay Id",
+          "type": "string"
+        },
+        "zone_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Zone Id",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "total_price": {
+          "minimum": 0,
+          "title": "Total Price",
+          "type": "number"
+        },
+        "currency": {
+          "default": "USD",
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "cost_basis": {
+          "default": "unknown",
+          "title": "Cost Basis",
+          "type": "string"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lng": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lng"
+        },
+        "commute_minutes": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "propertyNames": {
+              "$ref": "#/$defs/Mode"
+            },
+            "type": "object"
+          },
+          "default": {},
+          "title": "Commute Minutes",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rank",
+        "deciding_factor",
+        "stay_id",
+        "zone_id",
+        "total_price"
+      ],
+      "title": "StayOption",
+      "type": "object"
+    },
+    "TripState": {
+      "properties": {
+        "trip_id": {
+          "title": "Trip Id",
+          "type": "string"
+        },
+        "user_id": {
+          "title": "User Id",
+          "type": "string"
+        },
+        "state_version": {
+          "default": 0,
+          "minimum": 0,
+          "title": "State Version",
+          "type": "integer"
+        },
+        "city": {
+          "title": "City",
+          "type": "string"
+        },
+        "check_in": {
+          "format": "date",
+          "title": "Check In",
+          "type": "string"
+        },
+        "check_out": {
+          "format": "date",
+          "title": "Check Out",
+          "type": "string"
+        },
+        "guests": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Guests",
+          "type": "integer"
+        },
+        "anchors": {
+          "items": {
+            "$ref": "#/$defs/Anchor"
+          },
+          "title": "Anchors",
+          "type": "array"
+        },
+        "zones": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Zone"
+          },
+          "title": "Zones",
+          "type": "array"
+        },
+        "slots": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Slot"
+          },
+          "title": "Slots",
+          "type": "array"
+        },
+        "budget": {
+          "$ref": "#/$defs/Budget"
+        },
+        "profile": {
+          "$ref": "#/$defs/Profile",
+          "default": {
+            "diet": [],
+            "cuisines": [],
+            "gym_types": [],
+            "workout_times": [],
+            "stay_preferences": [],
+            "price_comfort": null,
+            "transport_mode": null
+          }
+        },
+        "roster": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Seat"
+          },
+          "title": "Roster",
+          "type": "array"
+        },
+        "round": {
+          "default": 0,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Round",
+          "type": "integer"
+        },
+        "stay": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StayOption"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "stay_shortlist": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/StayOption"
+          },
+          "title": "Stay Shortlist",
+          "type": "array"
+        },
+        "entries": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/PlanEntry"
+          },
+          "title": "Entries",
+          "type": "array"
+        },
+        "legs": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Leg"
+          },
+          "title": "Legs",
+          "type": "array"
+        },
+        "open_conflicts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Conflict"
+          },
+          "title": "Open Conflicts",
+          "type": "array"
+        }
+      },
+      "required": [
+        "trip_id",
+        "user_id",
+        "city",
+        "check_in",
+        "check_out",
+        "anchors",
+        "budget"
+      ],
+      "title": "TripState",
+      "type": "object"
+    },
+    "Usage": {
+      "additionalProperties": true,
+      "description": "What a proposal cost to produce. Extra keys (tokens, keenable_requests, maps_elements) feed the cost ledger.",
+      "properties": {
+        "calls": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Calls",
+          "type": "integer"
+        },
+        "credits": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Credits",
+          "type": "number"
+        }
+      },
+      "title": "Usage",
+      "type": "object"
+    },
+    "When": {
+      "properties": {
+        "date": {
+          "format": "date",
+          "title": "Date",
+          "type": "string"
+        },
+        "start": {
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "title": "End",
+          "type": "string"
+        }
+      },
+      "required": [
+        "date",
+        "start",
+        "end"
+      ],
+      "title": "When",
+      "type": "object"
+    },
+    "Window": {
+      "properties": {
+        "start": {
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+          "title": "End",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Window",
+      "type": "object"
+    },
+    "Zone": {
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "bounds": {
+          "$ref": "#/$defs/Bounds"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "bounds"
+      ],
+      "title": "Zone",
+      "type": "object"
+    }
+  },
+  "description": "Each specialist to Concierge and Verifier.\n\nThe Concierge also sends the merged plan to the Verifier as a proposal with\n`agent=\"concierge\"` and the exact `state` to check. The Verifier has no other way\nto get the anchors, budget and legs, and the plan says it works from this exact state.",
+  "properties": {
+    "agent": {
+      "$ref": "#/$defs/Seat"
+    },
+    "items": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ProposalItem"
+      },
+      "title": "Items",
+      "type": "array"
+    },
+    "usage": {
+      "$ref": "#/$defs/Usage",
+      "default": {
+        "calls": 0,
+        "credits": 0.0
+      }
+    },
+    "state": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TripState"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "agent"
+  ],
+  "title": "ProposalPayload",
+  "type": "object"
+}

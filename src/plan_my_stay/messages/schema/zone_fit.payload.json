@@ -1,0 +1,110 @@
+{
+  "$defs": {
+    "ZoneFitCounts": {
+      "properties": {
+        "restaurants": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Restaurants"
+        },
+        "gyms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Gyms"
+        }
+      },
+      "title": "ZoneFitCounts",
+      "type": "object"
+    },
+    "ZoneFitItem": {
+      "properties": {
+        "item_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Item Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "walk_minutes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Walk Minutes"
+        },
+        "fits": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fits"
+        }
+      },
+      "required": [
+        "item_id",
+        "name"
+      ],
+      "title": "ZoneFitItem",
+      "type": "object"
+    }
+  },
+  "description": "Restaurant and Gym to Stay.",
+  "properties": {
+    "zone_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Zone Id",
+      "type": "string"
+    },
+    "counts": {
+      "$ref": "#/$defs/ZoneFitCounts",
+      "default": {
+        "restaurants": null,
+        "gyms": null
+      }
+    },
+    "top_items": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ZoneFitItem"
+      },
+      "title": "Top Items",
+      "type": "array"
+    }
+  },
+  "required": [
+    "zone_id"
+  ],
+  "title": "ZoneFitPayload",
+  "type": "object"
+}
