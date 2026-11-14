@@ -40,6 +40,11 @@ itself doesn't look like the right fit.
 "correct" — worth settling on the plan's tested Qwen models (or
 confirming a faster path) before any worker wires this in for real.
 
+**Answer (team):** each agent picks its own SIE model and operation
+type — no team-wide mandate. The gym agent is free to choose whatever
+fits its latency budget, independent of what the plan names for the
+restaurant/stay path.
+
 ## 2. Cognee tenant is set up — confirm the *dataset* is targeted by UUID, not name
 
 Confirmed and distributed privately (not in this repo, per the "no
