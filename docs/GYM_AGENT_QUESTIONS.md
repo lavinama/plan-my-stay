@@ -70,6 +70,15 @@ also holds `/providers/cognee` (tenant ID, base URL, key), that's the
 intended distribution channel — never paste these into chat or commit
 them, as happened once already with another key in this repo.
 
+**Answer (team):** the shared dataset name is `plan_my_stay`. That
+resolves the practical question — every worker should target this name.
+The one thing still worth a quick live check, rather than assuming it
+by name alone, is confirming a real call against `plan_my_stay` returns
+the same dataset identifier the rest of the team sees, since the plan's
+own warning was specifically that a name lookup can silently create a
+new dataset under the caller's own session instead of resolving to the
+shared one.
+
 **Why it matters:** before any agent's Cognee calls are wired for real,
 run one live call against `plan_my_stay` and confirm the response's
 dataset identifier matches what the rest of the team expects, rather
