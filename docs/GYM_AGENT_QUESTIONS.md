@@ -40,27 +40,32 @@ itself doesn't look like the right fit.
 "correct" — worth settling on the plan's tested Qwen models (or
 confirming a faster path) before any worker wires this in for real.
 
-## 2. Cognee account is shared — confirm the dataset is targeted by UUID, not name
+## 2. Cognee tenant is set up — confirm the *dataset* is targeted by UUID, not name
 
-Confirmed: the team is using one shared Cognee account/key, matching
+Confirmed and distributed privately (not in this repo, per the "no
+tenant identifiers" rule `docs/PLAN.md`'s own publishing note already
+set): the team has a dedicated Cognee tenant, base URL and key, matching
 `docs/PLAN.md`'s design ("one shared Cognee Cloud account and key for
 the whole team, one session per trip").
 
-One nuance from the plan is still worth double-checking: "a shared
-dataset has to be targeted by its UUID; passing another owner's name
-creates your own dataset." If any worker's code (including the gym
-agent) points at the dataset by name (for example `plan_my_stay`)
-instead of its UUID, it may silently create a separate, unshared dataset
-under that caller's own account rather than writing into the real shared
-one.
+That settles account-level access. The narrower nuance from the plan is
+still worth double-checking: "a shared dataset has to be targeted by its
+UUID; passing another owner's name creates your own dataset." A tenant
+ID identifies the whole account, not a specific dataset inside it — if
+any worker's code (including the gym agent) points at the dataset by
+name (for example `plan_my_stay`) instead of its UUID, it may still
+silently create a separate, unshared dataset under that caller's own
+session rather than writing into the real shared one.
 
 One of the replaced PRs' validation notes also mentioned pulling
 `/providers/keenable` and `/providers/superlinked` credentials from
 **Infisical** (a shared secrets vault) for a smoke test, mapped
 in-process to env vars rather than committed anywhere. If that vault
-also holds `/providers/cognee`, that's a cleaner way to distribute the
-key than ad hoc `.env` sharing (which is how a real key nearly got
-exposed in this repo already).
+also holds `/providers/cognee` (tenant ID, base URL, key), that's the
+intended distribution channel — never paste these into chat or commit
+them, as happened once already with another key in this repo.
 
 **Why it matters:** before any agent's Cognee calls are wired for real,
-confirm the dataset is addressed by UUID everywhere, not by name.
+run one live call against `plan_my_stay` and confirm the response's
+dataset identifier matches what the rest of the team expects, rather
+than assuming the name alone resolves correctly.
