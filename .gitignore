@@ -1,0 +1,16 @@
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+
+# secrets — never commit
+.env
+.env.*
+agent_config.yaml
+
+# local team draft, not committed; docs/PLAN.md is the shared version
+teamplan.txt
+
+# local junk
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
