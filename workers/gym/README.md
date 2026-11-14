@@ -106,10 +106,12 @@ this worker's.
 python -m pytest tests/gym/ -v
 ```
 
-35 tests cover the gap-finding algorithm against the demo numbers, the
+These tests cover the gap-finding algorithm against the demo numbers, the
 fail-closed scoring and ranking, the envelope contract (valid and invalid
 examples), and every `handle()` code path: the Tuesday request, the
 Wednesday stay_pick, the regression guard that a stay_pick never touches an
-already-finalized date, a conflict that swaps in a new candidate for the
-same slot, a conflict on an unknown item, and malformed/unknown-type
-messages.
+already-finalized date, a conflict that swaps in a new candidate (and
+resends `workout_slot`, since the place changed) for the same slot, a
+conflict on an unknown item, malformed/unknown-type messages, and a
+well-formed envelope whose payload is missing a required field (returns a
+structured `error`, never an exception).
