@@ -23,11 +23,17 @@ from workers.gym.slots import TRIP_TZ, TimeRange
 _WEEKDAY_KEYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
-def _hours_cover(hours_for_day: str, window: TimeRange) -> bool:
-    """True if a single "HH:MM-HH:MM" (or several, comma separated) range
-    covers `window`'s start and end clock times. Only compares time-of-day;
-    the caller already knows `window` falls on the relevant day."""
-    for period in hours_for_day.split(","):
+def _hours_cover(hours_for_day: "str | list[str]", window: TimeRange) -> bool:
+    """True if a day's hours cover `window`'s start and end clock times.
+
+    docs/PLAN.md's strict-values rule allows "several periods as a list"
+    for split hours (e.g. a gym closed midday), so `hours_for_day` may be
+    a single "HH:MM-HH:MM" string, a comma-separated string of several,
+    or already a list of such strings. Only compares time-of-day; the
+    caller already knows `window` falls on the relevant day.
+    """
+    periods = hours_for_day if isinstance(hours_for_day, list) else hours_for_day.split(",")
+    for period in periods:
         period = period.strip()
         if "-" not in period:
             continue
