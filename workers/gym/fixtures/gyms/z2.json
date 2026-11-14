@@ -1,0 +1,39 @@
+{
+  "note": "Fictional demo data for zone z2 (Financial District, NYC). Not real businesses; invented for the Plan My Stay hackathon demo only.",
+  "gyms": [
+    {
+      "name": "FiDi Strength Collective",
+      "address": {"street": "90 Washington St", "city": "New York", "zip": "10006"},
+      "lat": 40.7083,
+      "lng": -74.0113,
+      "gym_type": ["Strength", "HIIT"],
+      "hours": {
+        "Mon": "08:00-20:00",
+        "Tue": "08:00-20:00",
+        "Wed": "08:00-20:00",
+        "Thu": "08:00-20:00",
+        "Fri": "08:00-20:00"
+      },
+      "cost": {"currency": "USD", "amount": 28, "basis": "day_pass"},
+      "source": {"url": "https://example-fictional.test/fidi-strength-collective", "fetched_at": "2026-11-14T10:15:00-05:00"},
+      "dedupe_key": "fidi-strength-collective|10006"
+    },
+    {
+      "name": "Battery Park Fitness Loft",
+      "address": {"street": "17 Battery Pl", "city": "New York", "zip": "10004"},
+      "lat": 40.7033,
+      "lng": -74.0170,
+      "gym_type": ["Yoga", "Strength"],
+      "hours": {
+        "Mon": "06:00-21:00",
+        "Tue": "06:00-21:00",
+        "Wed": "06:00-21:00",
+        "Thu": "06:00-21:00",
+        "Fri": "06:00-21:00"
+      },
+      "cost": {"currency": "USD", "amount": 22, "basis": "day_pass"},
+      "source": {"url": "https://example-fictional.test/battery-park-fitness-loft", "fetched_at": "2026-11-14T10:20:00-05:00"},
+      "dedupe_key": "battery-park-fitness-loft|10004"
+    }
+  ]
+}

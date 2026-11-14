@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "type": "preference_learned",
+  "message_id": "dddddddd-eeee-ffff-aaaa-bbbbbbbbbbbb",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "concierge",
+  "to": ["gym"],
+  "sent_at": "2026-11-14T16:16:00-05:00",
+  "summary": "User prefers an even earlier workout time",
+  "payload": {
+    "key": "preferred_workout_time",
+    "value": "06:30",
+    "evidence": "User said 7am felt rushed before an 8am meeting; asked to try 6:30am."
+  }
+}

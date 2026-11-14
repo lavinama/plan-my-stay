@@ -1,0 +1,14 @@
+{
+  "schema_version": "2.0",
+  "type": "request",
+  "message_id": "bbbbbbbb-cccc-dddd-eeee-ffffffffffff",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "concierge",
+  "to": ["gym"],
+  "sent_at": "2026-11-14T16:14:00-05:00",
+  "summary": "A request built against an unknown major schema version",
+  "payload": {}
+}
