@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "trip.context_changed.v1.schema.json",
+  "title": "Trip context changed event",
+  "type": "object",
+  "required": ["type", "trip_id", "revision", "changed_by", "changes", "affected_agents"],
+  "properties": {
+    "type": {"const": "trip.context_changed.v1"},
+    "trip_id": {"type": "string", "minLength": 1},
+    "revision": {"type": "integer", "minimum": 0},
+    "changed_by": {"type": "string"},
+    "changes": {"type": "object", "minProperties": 1},
+    "affected_agents": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "correlation_id": {"type": "string"}
+  },
+  "additionalProperties": true
+}

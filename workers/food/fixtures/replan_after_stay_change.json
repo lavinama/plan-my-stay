@@ -1,0 +1,65 @@
+{
+  "type": "food.replan.v1",
+  "trip": {
+    "id": "trip-nyc-demo",
+    "revision": 4,
+    "city": "New York",
+    "timezone": "America/New_York",
+    "selected_stay": {
+      "id": "stay-chelsea",
+      "location": {"lat": 40.7455, "lon": -73.9945}
+    },
+    "freshness_policy": {
+      "menu_max_age_hours": 720,
+      "hours_max_age_hours": 168
+    }
+  },
+  "previous_trip_revision": 3,
+  "changed_by": "accommodation-agent",
+  "change_event": {
+    "type": "trip.context_changed.v1",
+    "changes": {"selected_stay_id": {"old": "stay-midtown", "new": "stay-chelsea"}},
+    "affected_agents": ["food", "gyms", "activities"]
+  },
+  "travelers": [
+    {
+      "id": "traveler-1",
+      "hard_requirements": ["vegetarian_options"],
+      "preferred_cuisines": ["thai", "japanese"],
+      "disliked_cuisines": []
+    },
+    {
+      "id": "traveler-2",
+      "hard_requirements": ["vegetarian_options"],
+      "preferred_cuisines": ["italian", "japanese"],
+      "disliked_cuisines": []
+    }
+  ],
+  "meal_slots": [
+    {
+      "id": "dinner-2026-12-02",
+      "date": "2026-12-02",
+      "start": "19:00",
+      "end": "20:30",
+      "max_distance_km": 2.0,
+      "minimum_options": 3
+    }
+  ],
+  "candidate_pool": [
+    {
+      "id": "restaurant-1",
+      "name": "Example Noodle House",
+      "address": "Chelsea, New York, NY",
+      "location": {"lat": 40.744, "lon": -73.992},
+      "cuisines": ["japanese"],
+      "verified_attributes": {"vegetarian_options": true},
+      "travel_estimate": {"minutes": 8, "trip_revision": 3},
+      "evidence": {
+        "source_urls": ["https://example.org/menu"],
+        "menu": {"observed_at": "2026-11-10T18:00:00Z"},
+        "hours": {"observed_at": "2026-11-10T18:00:00Z", "meal_fit": "published_hours_match"},
+        "price": {"amount": 28, "currency": "USD", "basis": "menu_item_range", "observed_at": "2026-11-10T18:00:00Z"}
+      }
+    }
+  ]
+}
