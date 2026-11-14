@@ -24,13 +24,13 @@ v1 assumptions, all editable:
 - Stay prices are totals including fees and taxes.
 - If nothing fits the budget, the Concierge widens the zone or the budget and says so on screen.
 
-Demo trip (New York), Tue 17 Nov to Thu 19 Nov. Each meeting lasts one hour. The exact addresses are kept out of this public repository.
+Demo trip (New York), Tue 17 Nov to Thu 19 Nov. Each meeting lasts one hour.
 
-| Meeting | Area | When |
+| Meeting | Address | When |
 | --- | --- | --- |
-| A | Financial District | Tue 17 Nov, 11:00 to 12:00 |
-| B | Chelsea, near Penn Station | Tue 17 Nov, 16:00 to 17:00 |
-| C | SoHo | Wed 18 Nov, 10:00 to 11:00 |
+| A | 199 Water St, New York, NY 10038 | Tue 17 Nov, 11:00 to 12:00 |
+| B | 368 9th Ave, New York, NY 10001 | Tue 17 Nov, 16:00 to 17:00 |
+| C | 524 Broadway, New York, NY 10012 | Wed 18 Nov, 10:00 to 11:00 |
 
 All three are in Manhattan, so walking and transit will compete with driving on every trip. Tuesday has a four-hour gap between A and B for lunch and a workout, and Wednesday is free after 11:00.
 
@@ -60,7 +60,7 @@ The organizers' slides list prizes of $750, $500 and $250, plus a $500 bonus cha
 
 ## Agent seats and how they talk
 
-BAND's delete test: if the app still works with the room removed, BAND wasn't essential. Here the three specialists message each other directly in the room, and the Concierge only splits the budget and arbitrates. The Concierge is a seat that reacts to mentions, not a script that calls agents in order.
+BAND's delete test: if the app still works with the room removed, BAND wasn't essential. Here the three specialists message each other directly in the room, and the Concierge only checks the budget, proposes transport and arbitrates. The Concierge is a seat that reacts to mentions, not a script that calls agents in order.
 
 ```mermaid
 flowchart TB
@@ -99,7 +99,7 @@ Highlighted lines are the Verifier's decisions: a conflict goes to the agent tha
 | Gym agent | Finds gyms near the stay (or near the meetings before check-in), picks a workout slot, matches gym preferences | Prateek | Keenable pages read by a small model on SIE (Qwen3.5-4B); SIE reranker |
 | Verifier | Checks opening hours, travel time between events and the stay plus transport total; can block the plan | Mario | Plain code checks, no LLM |
 
-Routing (Google Maps) is a shared tool, not a seat. What the agents tell each other:
+Routing (Google Maps) is a shared tool, not a seat. What the agents tell each other (each is a JSON message type, defined under How agents share information):
 
 | Message | Who to whom | What it changes |
 | --- | --- | --- |
@@ -119,7 +119,7 @@ BAND counts a seat as essential when at least one of these holds:
 | Roster at runtime | The Concierge recruits only the agents the request needs, so no Gym agent if the user skips workouts. A partner team's agent can join too (see Extensions). |
 | Enforced boundary | Agents see anchors and time windows, never meeting names or attendees. A partner team's agent joins through a contact request both sides approve (see Extensions). |
 
-Each seat runs as its own process and acts only when mentioned. Build each agent as a plain function, `propose(request) -> proposal`, with a thin BAND wrapper, so it can be tested without BAND.
+Each seat runs as its own process and acts only when mentioned. Build each agent as a plain function that takes a parsed message and returns the messages to send (`handle(message) -> messages`), with a thin BAND wrapper that does the parsing and posting, so it can be tested without BAND.
 
 **Architecture for the Verifier, routing and memory** (agreed on 14 Nov)
 
@@ -141,10 +141,10 @@ Four people, one agent each plus the orchestrator. All three specialists follow 
 
 | Person | Owns | First deliverable |
 | --- | --- | --- |
-| Rohan | Stay agent (one site for now: Booking.com or Airbnb, whichever the data spike supports) and the shared page reader (Keenable fetch, then SIE extract and score) | A stub returning fixture stays in the shared schema within about 45 minutes, then a first page reader, then live data |
+| Rohan | Stay agent (one site for now: Booking.com or Airbnb, whichever the data spike supports) and the shared page reader (Keenable fetch, then SIE extract and score) | A stub that answers a request with a valid proposal message (fixture stays) within about 45 minutes, then a first page reader, then live data |
 | Jwalin | Restaurant agent | The same stub, then live results through Rohan's page reader |
 | Prateek | Gym agent | The same stub, then live results through Rohan's page reader |
-| Mario | Orchestrator: Concierge seat (transport proposal, budget check, arbitration), BAND wiring, shared schema and trip state, routing and geocoding service, cost ledger, Verifier checks, Cognee glue (preferences, trip board, city facts, agent traces), secrets and credits (Google billing, Keenable, Cognee, BAND, SIE) | The accounts and keys in the first 30 minutes, then the shared schema and one @mention round trip between two agents |
+| Mario | Orchestrator: Concierge seat (transport proposal, budget check, arbitration), BAND wiring, shared schema and trip state, routing and geocoding service, cost ledger, Verifier checks, Cognee glue (preferences, trip board, city facts, agent traces), secrets and credits (Google billing, Keenable, Cognee, BAND, SIE) | The accounts and keys in the first 30 minutes, then the shared JSON message models with example messages, and one @mention round trip that carries a validated message |
 
 Shared work and who owns it:
 
@@ -161,29 +161,116 @@ Rohan has the riskiest data path and now the page reader, so the reader has to l
 
 ## How agents share information
 
-All three specialists use the same proposal schema and the same trip state, so the Verifier and Concierge never care which agent wrote what. Agree on both in the first 30 minutes and keep them in one shared module in the repo.
+Every machine message between the Concierge and the specialists is one JSON object, built and parsed by the same shared code, so no agent ever has to read free text from another. Agree on the message models in the first 30 minutes and keep them in one shared module in the repo.
 
-**Request (Concierge to specialist)**
+**The envelope.** Every message has the same outer shape; only `payload` changes with `type`. This example is a request to the Restaurant agent (illustrative values, not real results).
 
-- Anchors with time windows: meeting lat/lng, start and end, no names or attendees. The Concierge marks which anchors come after check-in, because only those count for the stay
-- City, dates, guests
-- Total budget for the stay plus transport (the Concierge checks it)
-- The profile fields this agent needs
-- Constraints
+```json
+{
+  "schema_version": "1.0",
+  "type": "request",
+  "message_id": "6f1c2a52-6d0e-4c1b-9a53-1f0f6b2a9e10",
+  "reply_to": null,
+  "trip_id": "nyc-2026-11-17",
+  "from": "concierge",
+  "to": ["restaurant"],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Find vegetarian dinner options for Tue 17 Nov",
+  "payload": {
+    "city": "New York, NY",
+    "dates": {"check_in": "2026-11-17", "check_out": "2026-11-19"},
+    "guests": 1,
+    "anchors": [
+      {"id": "A", "lat": 40.7066, "lng": -74.0053, "start": "2026-11-17T11:00:00-05:00", "end": "2026-11-17T12:00:00-05:00", "counts_for_stay": false},
+      {"id": "B", "lat": 40.7502, "lng": -73.9987, "start": "2026-11-17T16:00:00-05:00", "end": "2026-11-17T17:00:00-05:00", "counts_for_stay": true}
+    ],
+    "zones": [{"id": "z1", "name": "Chelsea", "bounds": {"ne": {"lat": 40.756, "lng": -73.99}, "sw": {"lat": 40.738, "lng": -74.01}}}],
+    "slots": [{"id": "s1", "kind": "dinner", "date": "2026-11-17", "window": {"start": "17:30", "end": "21:00"}}],
+    "profile": {"diet": ["vegetarian"], "cuisines": ["Mediterranean", "Indian"]},
+    "constraints": {"max_walk_minutes": 15},
+    "response_type": "proposal"
+  }
+}
+```
 
-**Proposal (specialist back)**
+| Field | Meaning |
+| --- | --- |
+| `schema_version` | `1.0`. A new major version breaks parsing, so receivers reject an unknown major version |
+| `type` | One of the message types below |
+| `message_id` | A unique id (UUID) |
+| `reply_to` | The `message_id` this answers, or null |
+| `trip_id` | The trip, which is also its Cognee session id |
+| `from`, `to` | Seat names: `concierge`, `stay`, `restaurant`, `gym`, `verifier`. `to` is a list |
+| `sent_at` | ISO 8601 timestamp with an offset |
+| `summary` | One readable line, because people watch the room in Band Desktop |
+| `payload` | The object for this `type` |
 
-- Agent and proposal id
-- Items: name, address, lat/lng (geocoded with Google Maps), source url
-- Day and time window for each item
-- Cost estimate with currency (stays: total including fees and taxes; Airbnb often shows prices before fees)
-- Commute time to each meeting (Stay agent), from the routing service
-- One line on why it fits, naming the profile fields used
-- Opening hours, or the free-cancel deadline for stays
-- Reader: which SIE model or fallback produced the fields
-- `fetched_at`
-- Usage: calls made and cost
-- A dedupe key
+**Message types**
+
+| `type` | From and to | Payload keys |
+| --- | --- | --- |
+| `request` | Concierge to Stay, Restaurant, Gym | `city`, `dates`, `guests`, `anchors` (id, lat, lng, start, end, `counts_for_stay`), `zones`, `slots`, `profile`, `constraints`, `budget` (Stay only), `response_type` |
+| `proposal` | Each specialist to Concierge and Verifier | `agent`, `items`, `usage` |
+| `zone_fit` | Restaurant and Gym to Stay | `zone_id`, counts of matching restaurants and gyms within a short walk, `top_items` |
+| `stay_shortlist` | Stay to Concierge | `stays`, each with `stay_id`, `zone_id`, `total_price`, `currency` and commute times per anchor |
+| `stay_pick` | Stay to Restaurant, Gym and Concierge | `stay_id`, `zone_id`, `lat`, `lng`, commute times |
+| `workout_slot` | Gym to Restaurant and Concierge | `date`, `start`, `end`, `place` |
+| `preference_learned` | Any agent to Concierge and the specialists it affects | `key`, `value`, `evidence` |
+| `conflict` | Verifier to the owning agent | `rule`, `item_id`, `detail`, `suggestion` |
+| `verdict` | Verifier to Concierge | `status` (`cleared` or `blocked`), `conflicts` |
+| `error` | Any seat to the sender | `code`, `bad_message_id`, `fields` |
+
+Each entry in a `proposal`'s `items` carries `item_id`, `slot_id`, `name`, `address`, `lat`, `lng`, `when` (date, start, end), `cost` (currency, amount, basis), `fit` (reason and the profile fields used), `hours`, `source` (url and `fetched_at`), `reader` (model and whether it escalated) and a dedupe key. Stays add commute times and the free-cancel deadline when the site shows one.
+
+**Example proposal** (Restaurant to Concierge and Verifier; illustrative values)
+
+```json
+{
+  "schema_version": "1.0",
+  "type": "proposal",
+  "message_id": "b7d0c9ae-3f0a-4e43-8d1e-3a4a7b3f5c21",
+  "reply_to": "6f1c2a52-6d0e-4c1b-9a53-1f0f6b2a9e10",
+  "trip_id": "nyc-2026-11-17",
+  "from": "restaurant",
+  "to": ["concierge", "verifier"],
+  "sent_at": "2026-11-14T16:07:12-05:00",
+  "summary": "1 dinner option for Tue 17 Nov in zone z1",
+  "payload": {
+    "agent": "restaurant",
+    "items": [
+      {
+        "item_id": "rest-urban-vegan-kitchen",
+        "slot_id": "s1",
+        "name": "Urban Vegan Kitchen",
+        "address": {"street": "265 W 23rd St", "city": "New York", "zip": "10011"},
+        "lat": 40.7445,
+        "lng": -73.9983,
+        "when": {"date": "2026-11-17", "start": "18:30", "end": "19:45"},
+        "cost": {"currency": "USD", "amount": null, "basis": "unknown"},
+        "fit": {"reason": "Fully vegan menu; open until 22:00 on Tuesday", "profile_fields": ["diet"]},
+        "hours": {"Tue": "11:00-22:00"},
+        "source": {"url": "https://urbanvegankitchen.com", "fetched_at": "2026-11-14T16:06:40-05:00"},
+        "reader": {"model": "Qwen/Qwen3.5-4B", "escalated": false},
+        "dedupe_key": "urban-vegan-kitchen|10011"
+      }
+    ],
+    "usage": {"calls": 3, "credits": 118}
+  }
+}
+```
+
+**Rules that keep every message parseable**
+
+- **One object, nothing else.** A machine message's body is exactly one JSON object: no prose, no code fence, no trailing text. The shared parser first strips what BAND adds (a leading "\[Sender\]: " prefix in some adapters, then leading @handles) and then calls `json.loads`.
+- **One shared module.** Define the message models once, for example as Pydantic classes that export JSON Schema. Every agent sends with `build_message(...)` and receives with `parse_message(text)`; nobody writes or reads the JSON by hand.
+- **Code builds the envelope, not an LLM.** The Concierge's model fills only the payload fields. Code adds `message_id`, `from`, `sent_at` and the rest, serializes the object and validates it before sending. Where an LLM writes payload fields, use the provider's structured output (a JSON schema) and validate the result.
+- **Validate on both ends.** The sender validates before posting and the receiver on arrival. Receivers ignore unknown fields inside `payload`, so a newer sender doesn't break an older one, but reject an unknown `type` or major `schema_version`.
+- **Every message gets one answer.** BAND ends a turn only on a reply or `band_no_reply`; a silent turn is marked failed and not retried. So a bad message gets an `error` message (the `code`, the `bad_message_id` and the failing `fields`), and a message that needs no answer gets `band_no_reply`. Retry a bad message at most twice; then the Concierge drops that agent from the run and tells the user.
+- **Every send names a recipient.** `band_send_message` needs at least one mention, so `to` is passed as the mentions.
+- **Strict values.** Timestamps are ISO 8601 with an offset; clock times are 24-hour `HH:MM`; hours maps use the keys `Mon` to `Sun`; money is a number plus a currency code; unknown is `null`, never "n/a"; coordinates are decimal degrees; enum values are lower case and listed in the models.
+- **Small messages.** Send only what the receiver needs and refer to the rest by id. BAND's docs state no length limit, so check the real limit in the first round trip; the trip board in Cognee holds the shared state.
+- **A readable room.** Band Desktop shows these messages as raw JSON, so every message carries a one-line `summary`. The final itinerary to the user is prose from the Concierge, not JSON.
+- **Contract tests.** The repo holds one valid example of every type and a few invalid ones (a missing field, a wrong type, an unknown version). Each agent's tests round-trip them through `parse_message`, and each stub answers with those examples first.
 
 **Trip state (shared, in Cognee session memory; each agent starts its entries with its name)**
 
@@ -192,7 +279,7 @@ All three specialists use the same proposal schema and the same trip state, so t
 - Each agent's shortlist and chosen item
 - Open conflicts
 
-Each agent ships a stub with fixture data first, so the Concierge is built against it and swapped to live data later. Save the raw response as a fixture on the first successful pull. Fixtures also make the cost comparison fair, because live prices drift between runs.
+Each agent ships a stub that returns valid example messages with fixture data first, so the Concierge is built against it and swapped to live data later. Save the raw response as a fixture on the first successful pull. Fixtures also make the cost comparison fair, because live prices drift between runs.
 
 ## Data, routing and fallbacks
 
@@ -404,6 +491,7 @@ Still open:
 
 - [ ] Stay data (Rohan): Airbnb map-box cards give exact-date totals but no listing URLs, addresses, fee basis or cancellation terms. Is zone-level data enough for the demo, or do we add a hotel-price API?
 - [ ] Lesson summary after each trip (Mario, with the Cognee glue): what the small model reads (traces and accept or reject reasons) and which rules it writes.
+- [ ] BAND message limits: the docs state no maximum length. Confirm in the first round trip that a full request and a full proposal arrive intact.
 - [ ] Which partner team's agent do we hand off to (extension)? Not clear yet.
 
 ## Sources
