@@ -46,6 +46,20 @@ def _hours_cover(hours_for_day: str, window: TimeRange) -> bool:
     return False
 
 
+def _as_set(value: Any) -> set[str] | None:
+    """Normalize a profile/candidate gym_type field to a set of strings.
+
+    Accepts either a single string (e.g. "HIIT") or a list (e.g.
+    docs/PLAN.md's own convention for list-valued profile fields like
+    diet: ["vegetarian"]). None stays None, distinct from an empty set.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return {value}
+    return set(value)
+
+
 def score_candidate(candidate: dict[str, Any], profile: dict[str, Any], window: TimeRange) -> dict[str, Any]:
     """Hard-filter one candidate and note which facts were confirmed.
 
@@ -53,13 +67,13 @@ def score_candidate(candidate: dict[str, Any], profile: dict[str, Any], window: 
     """
     missing: list[str] = []
 
-    gym_type = candidate.get("gym_type")
-    wanted_type = profile.get("gym_type")
+    gym_type = _as_set(candidate.get("gym_type"))
+    wanted_type = _as_set(profile.get("gym_type"))
     if gym_type is not None and wanted_type is not None:
-        if wanted_type not in gym_type:
+        if not (gym_type & wanted_type):
             return {
                 "eligible": False,
-                "reason": f"gym_type {gym_type!r} does not include preferred {wanted_type!r}",
+                "reason": f"gym_type {sorted(gym_type)!r} does not include preferred {sorted(wanted_type)!r}",
                 "missing": [],
             }
     elif wanted_type is not None:
