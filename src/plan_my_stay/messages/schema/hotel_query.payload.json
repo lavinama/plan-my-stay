@@ -1,0 +1,87 @@
+{
+  "$defs": {
+    "HotelPoint": {
+      "description": "A candidate hotel to measure from. The Concierge fills `lat`/`lng`: the listing's own when it has one,\nelse the centre of its zone (`location_precision` = zone), because booking cards often carry no address.",
+      "properties": {
+        "stay_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Stay Id",
+          "type": "string"
+        },
+        "zone_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Zone Id",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "lat": {
+          "maximum": 90,
+          "minimum": -90,
+          "title": "Lat",
+          "type": "number"
+        },
+        "lng": {
+          "maximum": 180,
+          "minimum": -180,
+          "title": "Lng",
+          "type": "number"
+        },
+        "location_precision": {
+          "$ref": "#/$defs/LocationPrecision",
+          "default": "exact"
+        }
+      },
+      "required": [
+        "stay_id",
+        "zone_id",
+        "lat",
+        "lng"
+      ],
+      "title": "HotelPoint",
+      "type": "object"
+    },
+    "LocationPrecision": {
+      "enum": [
+        "exact",
+        "zone"
+      ],
+      "title": "LocationPrecision",
+      "type": "string"
+    }
+  },
+  "description": "Concierge to Gym and Restaurant: measure from each of these hotels and answer with gym_fit / restaurant_fit.",
+  "properties": {
+    "hotels": {
+      "items": {
+        "$ref": "#/$defs/HotelPoint"
+      },
+      "minItems": 1,
+      "title": "Hotels",
+      "type": "array"
+    },
+    "radius_minutes": {
+      "default": 10.0,
+      "exclusiveMinimum": 0,
+      "title": "Radius Minutes",
+      "type": "number"
+    }
+  },
+  "required": [
+    "hotels"
+  ],
+  "title": "HotelQueryPayload",
+  "type": "object"
+}

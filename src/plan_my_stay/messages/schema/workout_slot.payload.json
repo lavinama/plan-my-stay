@@ -1,0 +1,127 @@
+{
+  "$defs": {
+    "Address": {
+      "properties": {
+        "street": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Street"
+        },
+        "city": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "City"
+        },
+        "zip": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Zip"
+        }
+      },
+      "title": "Address",
+      "type": "object"
+    },
+    "WorkoutPlace": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lng": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lng"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "WorkoutPlace",
+      "type": "object"
+    }
+  },
+  "description": "Gym to Restaurant and Concierge.",
+  "properties": {
+    "date": {
+      "format": "date",
+      "title": "Date",
+      "type": "string"
+    },
+    "start": {
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "title": "Start",
+      "type": "string"
+    },
+    "end": {
+      "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+      "title": "End",
+      "type": "string"
+    },
+    "place": {
+      "$ref": "#/$defs/WorkoutPlace"
+    }
+  },
+  "required": [
+    "date",
+    "start",
+    "end",
+    "place"
+  ],
+  "title": "WorkoutSlotPayload",
+  "type": "object"
+}

@@ -1,0 +1,14 @@
+# Which BAND participant each seat is. Not secret: it is committed.
+#
+# A message names its recipients as seats ("to": ["stay"]); the band_adapter turns each seat into
+# the display name below and mentions that name in BAND. So register each seat at app.band.ai
+# (Connect remote agent) with EXACTLY this name, and keep it in step with this file.
+# Rules: distinct names; avoid "Assistant" or "Bot" (docs/PLAN.md: BAND dislikes them).
+# scripts/band_roundtrip.py checks the registered names against this file.
+seats:
+  concierge: "Plan My Stay Concierge"
+  stay: "Plan My Stay Stay Finder"
+  restaurant: "Plan My Stay Restaurant Scout"
+  gym: "Plan My Stay Gym Scout"
+  verifier: "Plan My Stay Verifier"
+  routing: "Plan My Stay Routing"

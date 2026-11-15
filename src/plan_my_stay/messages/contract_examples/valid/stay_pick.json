@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "type": "stay_pick",
+  "message_id": "00000000-0000-4000-8000-000000000005",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "stay",
+  "to": [
+    "restaurant",
+    "gym",
+    "concierge"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Stay pick: Chelsea studio",
+  "payload": {
+    "stay_id": "stay-chelsea-1",
+    "zone_id": "z1",
+    "lat": null,
+    "lng": null,
+    "commute_minutes": {
+      "B": {
+        "walking": 21.0,
+        "transit": 12.0,
+        "driving": 9.0
+      },
+      "C": {
+        "walking": 38.0,
+        "transit": 22.0,
+        "driving": 14.0
+      }
+    }
+  }
+}

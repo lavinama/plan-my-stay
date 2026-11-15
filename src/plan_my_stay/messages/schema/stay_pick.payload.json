@@ -1,0 +1,85 @@
+{
+  "$defs": {
+    "Mode": {
+      "description": "Travel modes the Routing seat answers for.",
+      "enum": [
+        "walking",
+        "transit",
+        "driving"
+      ],
+      "title": "Mode",
+      "type": "string"
+    }
+  },
+  "description": "Stay to Restaurant, Gym and Concierge.",
+  "properties": {
+    "stay_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Stay Id",
+      "type": "string"
+    },
+    "zone_id": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Zone Id",
+      "type": "string"
+    },
+    "lat": {
+      "anyOf": [
+        {
+          "maximum": 90,
+          "minimum": -90,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lat"
+    },
+    "lng": {
+      "anyOf": [
+        {
+          "maximum": 180,
+          "minimum": -180,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Lng"
+    },
+    "commute_minutes": {
+      "additionalProperties": {
+        "additionalProperties": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "propertyNames": {
+          "$ref": "#/$defs/Mode"
+        },
+        "type": "object"
+      },
+      "default": {},
+      "title": "Commute Minutes",
+      "type": "object"
+    }
+  },
+  "required": [
+    "stay_id",
+    "zone_id"
+  ],
+  "title": "StayPickPayload",
+  "type": "object"
+}

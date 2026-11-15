@@ -1,0 +1,36 @@
+{
+  "description": "A rule the plan broke, on which item, and how the owner could fix it.",
+  "properties": {
+    "rule": {
+      "title": "Rule",
+      "type": "string"
+    },
+    "item_id": {
+      "title": "Item Id",
+      "type": "string"
+    },
+    "detail": {
+      "title": "Detail",
+      "type": "string"
+    },
+    "suggestion": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Suggestion"
+    }
+  },
+  "required": [
+    "rule",
+    "item_id",
+    "detail"
+  ],
+  "title": "Conflict",
+  "type": "object"
+}

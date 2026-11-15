@@ -3,6 +3,9 @@
 `docs/PLAN.md` is the team's agreed plan, and this list now sits beside
 it. Answers recorded after the 14 Nov review are marked **Answer**.
 
+**The Gym agent is deferred (14 Nov):** the Concierge speaks only with the Stay agent for now, so these questions stay open until the
+Gym agent comes back (docs/PLAN.md, Extensions, item 7).
+
 PR #1 (`feature/alternative-stays-worker`) and PR #2
 (`feature/adaptive-food-agent`) are being replaced with new PRs, so this
 list no longer treats them as existing code to reconcile against.
@@ -15,8 +18,8 @@ design questions rather than conflicts.
 `docs/PLAN.md` defines one shared envelope — `schema_version`, `type`,
 `message_id`, `reply_to`, `trip_id`, `from`/`to`, `sent_at`, `summary`,
 `payload` — built by one shared `build_message`/`parse_message` module,
-with typed payloads (`request`, `proposal`, `zone_fit`, `workout_slot`,
-etc.), and one shared BAND adapter around `handle(message) -> messages`.
+with typed payloads (`request`, `proposal`, `workout_slot`, `hotel_query`,
+`gym_fit`, etc.), and one shared BAND adapter around `handle(message) -> messages`.
 
 **Why it matters for the gym agent:** every new worker PR, including the
 replacements for #1 and #2, should target this same envelope and
@@ -25,7 +28,10 @@ that gets replaced.
 
 ## 2. Which seat names?
 
-`docs/PLAN.md`'s roster: `stay`, `restaurant`, `gym`. Confirm these are
+`docs/PLAN.md`'s roster today is just `stay`: the Concierge speaks only
+with the Stay agent, with `gym` deferred (the Restaurant agent was dropped
+from the plan on 14 Nov). When the Gym agent returns, the roster is `stay`
+and `gym`. Confirm these are
 final (not `gyms`, not `food`, and whether an `activities` seat is real
 or not) before any worker's fixtures or `affected_agents` lists get
 written.
@@ -52,8 +58,9 @@ agent prefers. If the Airbnb data is too complicated, he drops it.
 ## 4. Who builds the shared Keenable+SIE page reader?
 
 `docs/PLAN.md` has Rohan build one shared reader (Keenable fetch → SIE
-extract and score) that all three specialists reuse, specifically to
-avoid three independent implementations.
+extract and score) that the specialists reuse (the Stay agent now, the
+Gym agent if it returns), specifically to avoid independent
+implementations.
 
 **Why it matters:** if the gym agent is supposed to reuse that shared
 reader, it should wait for it (or build against a stub with the same
@@ -149,4 +156,7 @@ plan assumes.
 
 **Answer (14 Nov review):** Rohan decides the stay data source, so a real
 stay location may not exist. Until a stay is picked, the gym agent works per
-zone from the request's `zones` and `anchors` (see `docs/PLAN.md`).
+zone from the request's `zones` and the meetings (see `docs/PLAN.md`). The
+Stay-only request now carries `meetings` with addresses and no `anchors`, so
+a returning Gym agent needs coordinates from somewhere: that is the open
+question of who geocodes (docs/PLAN.md, Open decisions).

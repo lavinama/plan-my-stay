@@ -2,27 +2,29 @@
 
 As of 14 Nov 2026
 
-Plan My Stay is a team of agents that plans a work trip around your meetings and remembers how you like to travel.
+Plan My Stay is a team of agents that picks where to stay for a work trip around your meetings and remembers how you like to stay.
+
+For now the Concierge speaks only with the Stay agent (decided on 14 Nov). Trip planning between the stay and the meetings, the Verifier gate, the Gym agent and the Restaurant agent are not in the Concierge's conversation: the Restaurant agent is out, and the rest are deferred, not dropped (see Extensions, items 7 and 8).
 
 ## What we're building
 
-You give it a city, dates, a total budget for the stay and transport, and your meetings (address and time). Three specialist agents find a stay, restaurants and a gym, and they message each other while they work. You get one itinerary and book it yourself; the agents never pay.
+You give it a city, dates, a total budget for the stay and transport, and your meetings (address and time). A Stay agent finds stays and ranks them by commute; the Concierge keeps the ones the budget allows and shows the three best stays, with their price and average commute. You book the stay yourself; the agents never pay. The answer says plainly that it is stays-only: the trips between the stay and the meetings are not planned day by day or checked yet.
 
-The agents also remember you and get better with use. Dietary needs, cuisines, gym type, preferred workout times and stay preferences go into one shared profile, so the next trip starts with them already known. An optional lesson writer (an extension) turns each trip into plain-text lessons that shape each agent's next search.
+The agents also remember you and get better with use. Stay preferences go into one shared profile, so the next trip starts with them already known. A lesson writer that would turn each trip into lessons is not built (see Not building).
 
-Why the agents can't work alone:
+Why the seats can't work alone:
 
-- Where you sleep decides which gyms and restaurants are walkable, and which ones exist should decide where you sleep.
-- A workout slot decides when and where dinner can happen.
-- What one agent learns about you, such as an early start, changes what the others pick.
+- The meetings fix where you need to be, so the commute decides which stay is best: the Stay agent needs the meetings' addresses, and it finds their coordinates and the travel times itself.
+- What the Stay agent learns about you, such as a quiet street, changes the next trip's picks.
+- A separate check that a stay doesn't make one trip impossible, with a Verifier that can block the plan, is deferred (see Extensions, item 8). With two seats that argument is weaker for now.
 
 v1 assumptions, all editable:
 
-- One city, one stay, one itinerary. The stay runs from Tuesday check-in to Thursday check-out (two nights), and a meeting before check-in doesn't constrain where it is.
-- The budget is one $1,000 total for the stay plus transport. For now only the stay price counts against it, because transport cost isn't calculated yet. The Stay agent gets the budget and returns no stay priced above it. Food and gym prices are shown but not budgeted.
-- Transport means the trips between the stay and the meetings and between meetings. The Routing seat gives travel times for walking, transit and driving, and the Concierge proposes the best option for each trip by time.
-- Stay prices are totals including fees and taxes. A total whose fee basis the site doesn't show is labelled `card_total_fees_unknown` in `cost.basis`. The budget check adds a fee reserve (a percentage the team picks) to such a total, and the Verifier answers `warn`.
-- If nothing fits the budget, the Concierge widens the zone or the budget and says so on screen.
+- One city, one stay. The stay runs from Tuesday check-in to Thursday check-out (two nights), and a meeting before check-in doesn't constrain where it is.
+- The budget is one $1,000 total for the stay plus transport. For now only the stay price counts against it, because transport cost isn't calculated yet. The Stay agent gets the budget and returns no stay priced above it.
+- Transport is not planned for now. The Stay agent ranks on the travel time between each stay and the meetings that count, by the fastest mode, and the Concierge shows the average. Transport modes for each trip and a day-by-day itinerary are deferred (see Extensions, item 8).
+- Stay prices are totals including fees and taxes. A total whose fee basis the site doesn't show is labelled `card_total_fees_unknown` in `cost.basis`. The budget check adds a fee reserve (a percentage the team picks) to such a total, and the answer says that fees are not confirmed.
+- If nothing fits the budget, the Concierge asks the Stay agent for cheaper options, twice. If that fails, it widens the budget and the zone and says so on screen.
 
 Demo trip (New York), Tue 17 Nov to Thu 19 Nov. Each meeting lasts one hour.
 
@@ -32,17 +34,16 @@ Demo trip (New York), Tue 17 Nov to Thu 19 Nov. Each meeting lasts one hour.
 | B | 368 9th Ave, New York, NY 10001 | Tue 17 Nov, 16:00 to 17:00 |
 | C | 524 Broadway, New York, NY 10012 | Wed 18 Nov, 10:00 to 11:00 |
 
-All three are in Manhattan, so walking and transit will compete with driving on every trip. Tuesday has a four-hour gap between A and B for lunch and a workout, and Wednesday is free after 11:00.
+All three are in Manhattan, so walking and transit will compete with driving on every commute.
 
-The stay starts on Tuesday, so A comes before check-in. Assuming the traveler arrives on Tuesday and goes straight to A, A doesn't constrain the stay: its commute score uses B to the stay on Tuesday evening and the stay to C on Wednesday. For the same reason, Tuesday's workout falls in the gap between A and B or after B, not near the stay.
+The stay starts on Tuesday, so A comes before check-in. Assuming the traveler arrives on Tuesday and goes straight to A, A doesn't constrain the stay: its commute score uses B to the stay on Tuesday evening and the stay to C on Wednesday. The Concierge marks A with `counts_for_stay` false, and the answer says A was not counted.
 
 Demo user (invented values for the demo; real preferences replace them later):
 
-- Diet: vegetarian
-- Cuisines: Mediterranean and Indian
-- Gym: HIIT, early morning (about 07:00)
 - Stay: quiet street and a private bathroom
 - Budget: $1,000 total for the stay plus transport
+
+The demo picks the stay only. It plans no trip day by day, no workouts and no meals.
 
 ## What judges score
 
@@ -50,142 +51,121 @@ Judges ask one question: would you use it tomorrow? Each build choice maps to a 
 
 | Rubric line | What we build | Proof on stage |
 | --- | --- | --- |
-| Production-ready | No separate UI: a user talks to the Concierge in a BAND room, and each agent starts with one command. A README, no hardcoded secrets | A teammate joins the room and plans a trip cold |
-| Shared memory that learns | Cognee stores each user's preferences, a copy of the trip state, shared city facts and every agent's traces, and each agent recalls what applies before it searches | A preference one agent learns changes another agent's picks in the same run, and run 2 starts from remembered preferences |
-| Small-model swarm | Keenable finds the pages, Superlinked SIE reads and ranks them with small models, plain code does the checks, and a frontier model only arbitrates and writes the final itinerary | The share of calls by model tier (the cost ledger is an extension) |
-| Multiplayer agents | Extension: another team's agent joins the room over BAND | A live handoff |
-| Earns or saves real money | Extension: this swarm's cost against a traditional all-LLM agent on the same trips | A cost table |
+| Production-ready | No separate UI: a user talks to the Concierge in a BAND room, and each agent starts with one command. A README, no hardcoded secrets | A teammate joins the room and gets a top three of stays cold |
+| Shared memory that learns | Cognee stores each user's preferences, a copy of the trip state (no meeting address) and the traces, and the Concierge sends the remembered preferences to the Stay agent in each request | A preference the Stay agent learns in run 1 is saved by the Concierge, and run 2 for the same user starts from it |
+| Small-model swarm | Keenable finds the pages, Superlinked SIE reads and ranks them with small models, plain code does the ranking and the budget check, and a frontier model only reads the person's message into the trip (it also arbitrates and writes the itinerary in the deferred full pipeline) | None: the share of calls by model tier needs the cost ledger, which is not built (see Not building) |
+| Multiplayer agents | Not built (see Not building) | None |
+| Earns or saves real money | Not built (see Not building) | None |
 
 The organizers' slides list prizes of $750, $500 and $250, plus a $500 bonus challenge at 4:00 PM. The Luma page says $2k plus credits and different times, so confirm with an organizer. We plan to the slides.
 
 ## Agent seats and how they talk
 
-BAND's delete test: if the app still works with the room removed, BAND wasn't essential. Here the three specialists message each other directly in the room, and the Concierge only checks the budget, proposes transport and arbitrates. The Concierge is a seat that reacts to mentions, not a script that calls agents in order.
+BAND's delete test: if the app still works with the room removed, BAND wasn't essential. The Concierge speaks only with the Stay agent for now, so the room carries the Concierge's request (the meetings, the budget, the zones and the stay preferences), the Stay agent's shortlist, a cheaper-options round when nothing fits the budget, and a preference the Stay agent learns. There are no peer messages between specialists, and the Verifier, Routing and the Gym agent are not in the Concierge's conversation (see Extensions, items 7 and 8). Honest limit: with two seats the room is a plain request and reply, and the blockable-verdict condition below does not apply until the Verifier returns. The Concierge is a seat that reacts to mentions, not a script that calls agents in order.
 
 ```mermaid
 flowchart TB
     You["You<br/>chats in Band Desktop<br/>books, gives feedback"]
-    Concierge["Concierge<br/>itinerary, transport<br/>budget, arbitration"]
-    subgraph Room["BAND room: agents message each other directly"]
+    Concierge["Concierge<br/>top 3 stays<br/>budget check, keeps Stay order"]
+    subgraph Room["BAND room"]
         direction LR
-        Restaurant["Restaurant agent<br/>Keenable pages, SIE<br/>meals near your plans"]
-        Stay["Stay agent<br/>one booking site<br/>ranks by commute, fit"]
-        Gym["Gym agent<br/>Keenable pages, SIE<br/>picks a workout slot"]
+        Stay["Stay agent<br/>one booking site<br/>coordinates, travel times, ranks by commute"]
         State["Trip state travels in BAND messages (versioned JSON); Cognee keeps a copy"]
     end
-    Verifier["Verifier<br/>hours, times, budget<br/>can block the plan"]
-    Routing["Routing<br/>Google Maps times<br/>plain code, no LLM"]
+    Maps["Routing seat or Google Maps<br/>Rohan decides<br/>geocoding and travel times"]
     You -->|"trip + prefs"| Concierge
-    Concierge -->|"final plan"| You
-    Concierge -->|"request + anchors"| Room
-    Restaurant -->|"zone fit"| Stay
-    Gym -->|"zone fit"| Stay
-    Stay -->|"stay pick"| Restaurant
-    Stay -->|"stay pick"| Gym
-    Gym -->|"workout slot"| Restaurant
-    Room -->|"proposals"| Verifier
-    Verifier -->|"conflict, owner mentioned"| Room
-    Verifier -->|"cleared plan"| Concierge
-    Room -->|"requests"| Routing
-    Routing -->|"times"| Room
+    Concierge -->|"top 3 stays"| You
+    Concierge -->|"request + meetings + budget"| Stay
+    Stay -->|"shortlist ranked by commute"| Concierge
+    Stay -.->|"geocode + travel times"| Maps
 ```
 
-Shared: Cognee memory, Keenable, Superlinked SIE. Google Maps sits behind the Routing seat.
-
-Highlighted lines are the Verifier's decisions: a conflict goes to the agent that owns it, and a cleared plan goes to the Concierge.
+Shared: Cognee memory, Keenable, Superlinked SIE. Google Maps is used by the Stay agent, through the Routing seat or directly (Rohan decides, see Open decisions). The dotted line is that optional call; the Concierge never calls Routing for now.
 
 | Seat | Job | Owner | Model tier |
 | --- | --- | --- | --- |
-| Concierge | Talks to the user in the BAND room, holds the private itinerary, proposes the best transport mode for each trip by travel time, checks the top stay against the budget, arbitrates ties and conflicts between the other agents and explains the trade-off to the user (it gates and arbitrates; it does not rank stays), writes the final itinerary | Mario | Frontier, for arbitration and the final write-up only |
-| Stay agent | Finds stays on one site (Airbnb worked best in the 14 Nov test), one map box per zone, drops any stay priced above the budget, then ranks the rest by commute time and the other agents' zone fit with a plain-code score (see How the Stay agent ranks stays) | Rohan | Keenable pages read by a small model on SIE (Qwen3.5-4B); the ranking is plain code, no LLM |
-| Restaurant agent | Finds meals near the meetings and the stay, inside the time windows, matching dietary preferences | Jwalin | Keenable pages read by a small model on SIE (Qwen3.5-4B); SIE reranker |
-| Gym agent | Finds gyms near the stay (or near the meetings before check-in), picks a workout slot, matches gym preferences | Prathik | Keenable pages read by a small model on SIE (Qwen3.5-4B); SIE reranker |
-| Verifier | Checks opening hours, travel time between events and the stay price against the budget; can block the plan | Mario | Plain code checks, no LLM |
-| Routing | Answers route requests: geocodes addresses and returns travel times for walking, transit and driving at a given time; holds the Google Maps key and caches results | Mario | Plain code, no LLM |
+| Concierge | Talks to the user in the BAND room, reads the trip (city, dates, budget, meetings with address and time), builds the meetings (no titles, no attendees) and sends one request to the Stay agent. Drops the stays the budget excludes once the fee reserve is added, asks for cheaper options if none fits, keeps the Stay agent's commute order and answers with the top three (see How hotels are ranked). It proposes no transport, arbitrates no other agent's conflicts and has no Verifier, because no other agent is in its conversation | Mario | Frontier, to read the person's message into the trip only; the budget check, the order and the answer are plain code |
+| Stay agent | Finds stays on one site (Airbnb worked best in the 14 Nov test), one map box per zone, drops any stay priced above the budget, finds the meetings' coordinates and the travel times itself (through the Routing seat or Google Maps directly, Rohan decides), then ranks the rest by average commute time to the meetings that count, with plain code | Rohan | Keenable pages read by a small model on SIE (Qwen3.5-4B); the ranking is plain code, no LLM |
+| Verifier | Not in the Concierge's flow for now (deferred, see Extensions, item 8). It would check the travel time between the stay and the meetings and the stay price against the budget, and could block the plan | Mario | Plain code checks, no LLM |
+| Routing | Not in the Concierge's flow for now. Kept only as a seat the Stay agent may ask: it geocodes addresses and returns travel times for walking, transit and driving at a given time, holds the Google Maps key and caches results. Rohan decides whether the Stay agent uses it or calls Google Maps directly | Mario | Plain code, no LLM |
 
-Routing (Google Maps) is a seat: any seat asks it for travel times by message. What the agents tell each other (each is a JSON message type, defined under How agents share information):
+What the Concierge and the Stay agent tell each other (each is a JSON message type, defined under How agents share information):
 
 | Message | Who to whom | What it changes |
 | --- | --- | --- |
-| Zone fit: matching restaurants and gyms within a short walk, per zone, with which of the top ones are open at the meal windows or can host the preferred workout slot | Restaurant and Gym to Stay | The Stay agent re-ranks stays by commute plus zone fit |
-| Stay pick: the shortlisted or chosen stay's location and commute times | Stay to Restaurant and Gym | Both search around the stay for mornings and evenings |
-| Workout slot: day, start, end and place | Gym to Restaurant | The Restaurant agent sets its dinner window and area around the workout |
-| Stay shortlist: a ranked list of stays within the budget, with total price, commute times and the factor that decided each placement | Stay to Concierge | The Concierge adds the best transport mode by time for each trip, checks the top stay against the budget, arbitrates ties and conflicts, and asks for cheaper options if it's over |
-| Preference learned: key, value and evidence | Any agent to the Concierge and the specialists it affects | The affected agents use it in the same run; the Concierge is the only one that writes it to Cognee, for later runs |
-| Conflict: which rule broke and on which item | Verifier to the owning agent | The owner revises and posts again |
-| Route request: origin, destination and time | Any seat to Routing | Routing replies with travel times for walking, transit and driving |
+| Request: city, dates, the meetings (id, address, start, end, `counts_for_stay`), budget, zones, stay preferences and a roster of just the Stay seat | Concierge to Stay | The Stay agent finds the meetings' coordinates and the travel times, and returns the stays within the budget. The Concierge sends no coordinates |
+| Stay shortlist: stays within the budget ranked by average commute, with total price, commute times per meeting and the average commute | Stay to Concierge | The Concierge drops the stays that don't fit the budget (with the fee reserve), keeps the order, shows the top three, and asks for cheaper options if none fits |
+| Preference learned: key, value and evidence | Stay to Concierge | The Concierge is the only one that writes it to Cognee, so the next run starts from it |
+
+The Stay agent may also send a `stay_pick`, which the Concierge only holds, because no Gym agent is in the run to use it. Conflict, verdict and route messages are not Concierge flows for now (see Extensions, item 8).
 
 BAND counts a seat as essential when at least one of these holds:
 
 | Condition | Where it happens in a run |
 | --- | --- |
-| Dependent handoff | Zone fit changes the Stay agent's ranking, the workout slot changes the Restaurant agent's window, and a conflict changes the owner's next search. |
-| Blockable verdict | The Concierge delivers only after the Verifier clears the plan. |
-| Roster at runtime | The Concierge recruits only the agents the request needs, so no Gym agent if the user skips workouts. A partner team's agent can join too (see Extensions). |
-| Enforced boundary | Agents see anchors and time windows, never meeting names or attendees. A partner team's agent joins through a contact request both sides approve (see Extensions). |
+| Dependent handoff | The request and the shortlist: the shortlist changes what the Concierge does next. If nothing fits the budget with the fee reserve, it asks the Stay agent for cheaper options (twice) and then widens the budget and the zone. A preference the Stay agent learns in a run reaches the Concierge in the same run and starts the next one. |
+| Blockable verdict | Does not apply for now: no Verifier is in the Concierge's flow, so nothing can block the answer. It returns with the Verifier gate (see Extensions, item 8). |
+| Roster at runtime | Does not show yet: the roster in every request is just the Stay seat, so nothing is recruited or skipped. Runtime recruiting returns with the Gym agent (a user who skips workouts gets no Gym agent). |
+| Enforced boundary | The Stay agent sees the meetings' addresses and time windows, which it needs to find the commute, and never meeting titles or attendees. The Concierge keeps no address in the trip-state copy it saves to Cognee. |
 
-**How the Stay agent ranks stays**
+**How hotels are ranked**
 
-The Stay agent ranks the stays, and the Concierge only gates and arbitrates. The Stay agent owns the stay data (price, zone, and commute times from the Routing seat) and receives the `zone_fit` messages from the Restaurant and Gym agents. The Concierge sees neither the listings nor the page-level evidence, and if it did the scoring, every `zone_fit` would pass through a frontier model, which defeats the small-model design. The score is plain code, so it is cheap and testable.
+The Stay agent ranks the hotels, and it ranks them on one thing: average commute, the travel time between the hotel and each meeting that counts for the stay, to and from, by the fastest mode. The Concierge keeps that order, drops any stay the budget excludes and shows the top three. All three are ranked and priced, with their average commute; none is planned trip by trip or checked yet (see Extensions, item 8). There are no other factors for now: restaurants are out and the Gym agent is deferred (see Extensions, which keeps its second ranking factor).
 
-1. **Hard filters first.** Drop any stay priced above the $1,000 budget, and any stay outside a workable commute of the meetings after check-in. Meetings before check-in don't count (`counts_for_stay` is false).
-2. **Then a weighted score per zone.**
-   - Commute: the average and the worst travel time to the anchors that count. This has the heaviest weight, because the meetings are the fixed points.
-   - Gym fit: whether there is a gym of the user's type near the stay, and whether the preferred workout slot (about 07:00) can work from there.
-   - Restaurant fit: how many options match the diet within a short walk, and how many of the top ones are open at the meal windows.
-   - Stay preferences (quiet street, private bathroom) break ties.
-3. **Rank by the score, not by raw counts.** Counts reward dense, noisy neighborhoods, so cap the credit for extra restaurants after about five.
-4. **Return a ranked shortlist, not one pick,** and say which factor decided each placement (`rank` and `deciding_factor` on each stay in `stay_shortlist`). That gives the Concierge something to arbitrate.
+1. **Hard filters first.** The Stay agent drops any stay priced above the $1,000 budget and any stay outside a workable commute of the meetings after check-in; the Concierge also drops one that is over once the fee reserve is added. Meetings before check-in don't count (`counts_for_stay` is false).
+2. **Rank by average commute.** Plain code in the Stay agent, no LLM. A tie goes to the cheaper stay.
+3. **Show the top three with price, average commute and which one is recommended.** The answer names the meetings that counted and says the stays are ranked by average commute (`rank`, `deciding_factor` and the commute minutes per meeting come in `stay_shortlist`). It ends with an honest line: this is a stays-only answer, and the trips between the stay and the meetings are not planned day by day or checked yet. Stay preferences (quiet street, private bathroom) are not scored yet.
 
-The Concierge checks the top stay against the budget, resolves ties and conflicts (for example, the best gym zone is a 40-minute commute while the best commute zone has no gym), and explains the trade-off to the user. Only the commute weight is set so far; the other weights, the workable-commute limit and the restaurant cap are first guesses to tune in the first full run.
+The workable-commute limit is a first guess to tune in the first full run.
 
 Each seat runs as its own process and acts only when mentioned. Build each agent as a plain function that takes a parsed message and returns the messages to send (`handle(message) -> messages`), with one shared `band_adapter` module (built by Mario) that every seat imports: it parses the message, calls `handle()`, posts the answer and retries. Each person writes only `handle()`, so it can be tested without BAND.
 
-**Architecture for the Verifier, routing and memory** (agreed on 14 Nov)
+**Architecture for trip state and memory** (agreed on 14 Nov; the Verifier and Routing bullets are deferred, see Extensions, item 8)
 
-- **Verifier: a BAND seat running plain code, no LLM.** BAND's blockable-verdict test needs a separate seat that can stop the plan; a function the Concierge calls would not count. The BAND quickstart shows a model-free agent: a Python LangGraph graph with one non-LLM node that replies through `band_send_message`.
-- **Routing: a plain-code BAND seat, not an HTTP service.** Mario runs a Routing seat that wraps Google Maps geocoding and route matrices. Seats ask it for travel times by message, so all traffic goes through BAND and no laptop needs to reach another laptop. It holds the Maps key, caches results and answers in the same message envelope as every other seat. A lookup is a message round trip, so keep lookups to the few a run needs.
-- **Trip state: versioned JSON in the BAND messages.** Every message carries `state_version`, and the Concierge raises it on each change. The plain-code Verifier works from this exact state. Cognee keeps a copy for memory only, because its session read returns just the last 20 entries and its recall is text retrieval.
+- **Verifier (deferred): a BAND seat running plain code, no LLM.** BAND's blockable-verdict test needs a separate seat that can stop the plan; a function the Concierge calls would not count. The BAND quickstart shows a model-free agent: a Python LangGraph graph with one non-LLM node that replies through `band_send_message`. It is not in the Concierge's conversation for now.
+- **Routing (not in the Concierge's flow): a plain-code BAND seat, not an HTTP service.** If it is built, Mario runs a Routing seat that wraps Google Maps geocoding and route matrices. Seats ask it for travel times by message, so all traffic goes through BAND and no laptop needs to reach another laptop. It holds the Maps key, caches results and answers in the same message envelope as every other seat. A lookup is a message round trip, so keep lookups to the few a run needs. For now only the Stay agent might ask it, and Rohan may call Google Maps directly instead (see Open decisions).
+- **Trip state: versioned JSON in the BAND messages.** Every message carries `state_version`, and the Concierge raises it on each change. Cognee keeps a copy for memory only, because its session read returns just the last 20 entries and its recall is text retrieval. The copy holds no meeting address.
 - **Memory: one shared Cognee Cloud account and key, one session per trip.** Cognee scopes session entries to the user, so two users don't share a session, and a shared dataset has to be targeted by its UUID. Three agents wrote to one session at once in a test with no lost entries, so every agent can write to the trip session.
-- **Where agents run: each owner's laptop, joined through BAND.** All four teammates are in one BAND room. One shared Cognee key serves all of them and the Routing seat handles travel times, so everyone builds and tests in parallel.
+- **Where agents run: each owner's laptop, joined through BAND.** All four teammates are in one BAND room. One shared Cognee key serves all of them, so everyone builds and tests in parallel.
 
 **BAND setup**
 
-- Mario registers each seat at app.band.ai under one account, if BAND allows it (unverified: confirm in the first round trip), so teammates need no contact requests between their seats: Concierge, Stay, Restaurant, Gym, Verifier, Routing (Connect remote agent; description of at least 10 characters; avoid names like "Assistant" or "Bot"). Each owner gets their seat's key privately.
+- Mario registers each seat at app.band.ai under one account, if BAND allows it (unverified: confirm in the first round trip), so teammates need no contact requests between their seats. There are two seats to register for now: Concierge and Stay. The Verifier needs one only when it returns, and Routing only if the Stay agent uses it (Connect remote agent; description of at least 10 characters; avoid names like "Assistant" or "Bot"). Each owner gets their seat's key privately.
 - The API key shows once. Keep `agent_config.yaml` and `.env` out of git.
-- Python: `uv add "band-sdk[langgraph]"` installs the latest release (9.2.1 on 13 Nov; the quickstart showed 9.1.0). The SDK shipped three major versions in two weeks, so check the changelog if something breaks. Connect with `Agent.from_config("name", adapter=...)`. A plain-code seat such as the Verifier or Routing uses `LangGraphAdapter` with a graph that has one non-LLM node; LLM seats add a model extra such as `[anthropic]`.
+- Python: `uv add "band-sdk[langgraph]"` installs the latest release (9.2.1 on 13 Nov; the quickstart showed 9.1.0). The SDK shipped three major versions in two weeks, so check the changelog if something breaks. Connect with `Agent.from_config("name", adapter=...)`. A plain-code seat such as the Verifier or Routing (when built) uses `LangGraphAdapter` with a graph that has one non-LLM node; LLM seats add a model extra such as `[anthropic]`.
 - An agent receives only messages that mention it, and it must first be added to the room as a participant.
 
 ## Who builds what
 
-Four people, one agent each plus the orchestrator. All three specialists follow the same recipe, Keenable to find pages and SIE to read them, through one page reader that Rohan builds. Restaurant and gym pages should be easier than booking sites, so Jwalin and Prathik should finish their agents first and then take work from Mario.
+Four people, one specialist agent for now. Rohan builds the Stay agent and Mario the orchestrator. The Restaurant agent is out and the Gym agent is deferred (see Open decisions and Extensions), so Jwalin and Prathik have no agent of their own yet and can take work from Mario. The Verifier and Routing seats are not needed now either (see Extensions, item 8). The Stay agent follows the recipe Keenable to find pages and SIE to read them, through one page reader that Rohan builds, and it now also finds the meetings' coordinates and the travel times itself.
 
 | Person | Owns | First deliverable |
 | --- | --- | --- |
-| Rohan | Stay agent (one site for now: Booking.com or Airbnb, whichever the data spike supports) and the shared page reader (Keenable fetch, then SIE extract and score) | A stub that answers a request with a valid proposal message (fixture stays) within about 45 minutes, then a first page reader, then live data |
-| Jwalin | Restaurant agent | The same stub, then live results through Rohan's page reader |
-| Prathik | Gym agent | The same stub, then live results through Rohan's page reader |
-| Mario | Orchestrator: Concierge seat (transport proposal, budget check, arbitration), BAND wiring (the shared `band_adapter` module), shared schema and trip state, Routing seat, Verifier checks, Cognee glue (preferences, a copy of the trip state, city facts, agent traces), secrets and credits (Google billing, Keenable, Cognee, BAND, SIE) | The accounts and keys in the first 30 minutes, then the shared JSON message models with example messages, and one @mention round trip that carries a validated message |
+| Rohan | Stay agent (one site for now: Booking.com or Airbnb, whichever the data spike supports), the meetings' coordinates and the travel times inside it (through the Routing seat or Google Maps directly, he decides) and the shared page reader (Keenable fetch, then SIE extract and score) | A stub that answers a request with meetings in it with a valid stay shortlist (fixture stays) within about 45 minutes, then a first page reader, then live data |
+| Jwalin | No agent now (the Restaurant agent is out). Proposed, to confirm: the shared page reader, so Rohan can stay on the Stay data. The lesson writer is not built (see Not building) | A first page reader that turns saved Keenable pages into schema-valid items |
+| Prathik | No agent now (the Gym agent is deferred). The cost ledger and the calendar connection are not built (see Not building), so there is no work assigned yet | None |
+| Mario | Orchestrator: Concierge seat (reads the trip, builds the meetings, budget check, top three answer), BAND wiring (the shared `band_adapter` module), shared schema and trip state, Cognee glue (preferences, a copy of the trip state, agent traces), secrets and credits (Google billing, Keenable, Cognee, BAND, SIE). The Verifier and Routing seats are not needed now | The accounts and keys in the first 30 minutes, then the shared JSON message models with example messages, and one @mention round trip that carries a validated message |
 
 Shared work and who owns it:
 
 | Work | Why it matters | Owner |
 | --- | --- | --- |
-| Shared page reader: Keenable fetch, then SIE extract and score | All three agents depend on it, so build it once | Rohan |
-| Verifier checks | BAND meaningful use and production-readiness | Mario |
-| Cognee glue: preferences, a copy of the trip state, city facts, agent traces | Rubric: memory that learns | Mario |
+| Shared page reader: Keenable fetch, then SIE extract and score | The Stay agent depends on it now and the Gym agent will later, so build it once | Rohan (Jwalin proposed) |
+| The meetings' coordinates and travel times inside the Stay agent | Without them the Stay agent can't rank by commute | Rohan (Routing seat or Google Maps directly) |
+| Verifier checks and the Routing seat | Deferred (see Extensions, item 8) | None for now |
+| Cognee glue: preferences, a copy of the trip state, agent traces | Rubric: memory that learns | Mario |
 | Secrets and credits: Google billing, Keenable, Cognee, BAND, SIE | Everyone is blocked without them. Keenable's keyless limit is per IP and the venue WiFi probably shares one, so each teammate needs a Keenable key | Mario, in the first 30 minutes; share keys privately and never commit them |
 | README and setup notes | Production-ready: a teammate can start every agent cold | Not yet assigned; first free person |
 | Rehearse the New York demo trip end to end | A real run beats a polished demo | Mario |
-| Cost ledger and lesson writer (extensions) | Rubrics: small-model swarm, and memory that learns | Jwalin or Prathik, once their agents work |
+| Cost ledger and lesson writer | Not built (see Not building) | None |
 
-Rohan has the riskiest data path and now the page reader, so the reader has to land early. Until it does, Jwalin and Prathik can use Keenable's fetch with a prompt as a stand-in. Mario owns the most (Concierge, Routing seat, Verifier, Cognee glue), so the cost ledger and the lesson writer are extensions for Jwalin or Prathik. If the team falls behind, cut in this order: the extensions, then the Gym agent's live data (keep its stub, because its `workout_slot` message is what the demo shows). Keep the next-trip memory demo: shared memory that learns is a scored rubric line. Never cut the Verifier gate or the peer messages.
+Rohan has the riskiest data path and now the page reader, so the reader has to land early. Until it does, the Stay agent can use Keenable's fetch with a prompt as a stand-in. Mario owns the most (Concierge, BAND wiring, Cognee glue), so the cost ledger and the lesson writer are not built (see Not building). If the team falls behind, the extensions are already out, and there is no cached-data fallback for live stay data (see Not building). Keep the next-trip memory demo: shared memory that learns is a scored rubric line. Never cut the request and shortlist handoff between the Concierge and the Stay agent. The Verifier gate is deferred by the 14 Nov decision that the Concierge speaks only with the Stay agent, not cut for time (see Extensions, item 8).
 
 ## How agents share information
 
-Every machine message between the Concierge and the specialists is one JSON object, built and parsed by the same shared code, so no agent ever has to read free text from another. Agree on the message models in the first 30 minutes and keep them in one shared module in the repo.
+Every machine message between the Concierge and the Stay agent is one JSON object, built and parsed by the same shared code, so no agent ever has to read free text from another. Agree on the message models in the first 30 minutes and keep them in one shared module in the repo.
 
-**The envelope.** Every message has the same outer shape; only `payload` changes with `type`. This example is a request to the Restaurant agent (illustrative values, not real results).
+**The envelope.** Every message has the same outer shape; only `payload` changes with `type`. This example is the request the Concierge sends to the Stay agent (illustrative values, not real results). It carries the meetings with address and time, never a title or attendees, and no coordinates, because the Stay agent finds them. It is based on the repo's contract example `src/plan_my_stay/messages/contract_examples/valid/stay_request.json`, which also carries empty `anchors` and `slots`, empty lists in `profile`, `constraints` (`max_walk_minutes`) and `round` 0, left out here.
 
 ```json
 {
@@ -197,22 +177,27 @@ Every machine message between the Concierge and the specialists is one JSON obje
   "user_id": "demo-user-1",
   "state_version": 2,
   "from": "concierge",
-  "to": ["restaurant"],
+  "to": ["stay"],
   "sent_at": "2026-11-14T16:05:00-05:00",
-  "summary": "Find vegetarian dinner options for Tue 17 Nov",
+  "summary": "Find stays in New York, NY, Tue 17 Nov to Thu 19 Nov within $1,000.00",
   "payload": {
     "city": "New York, NY",
     "dates": {"check_in": "2026-11-17", "check_out": "2026-11-19"},
     "guests": 1,
-    "anchors": [
-      {"id": "A", "lat": 40.7066, "lng": -74.0053, "start": "2026-11-17T11:00:00-05:00", "end": "2026-11-17T12:00:00-05:00", "counts_for_stay": false},
-      {"id": "B", "lat": 40.7502, "lng": -73.9987, "start": "2026-11-17T16:00:00-05:00", "end": "2026-11-17T17:00:00-05:00", "counts_for_stay": true}
+    "meetings": [
+      {"id": "A", "address": "199 Water St, New York, NY 10038", "start": "2026-11-17T11:00:00-05:00", "end": "2026-11-17T12:00:00-05:00", "counts_for_stay": false},
+      {"id": "B", "address": "368 9th Ave, New York, NY 10001", "start": "2026-11-17T16:00:00-05:00", "end": "2026-11-17T17:00:00-05:00", "counts_for_stay": true},
+      {"id": "C", "address": "524 Broadway, New York, NY 10012", "start": "2026-11-18T10:00:00-05:00", "end": "2026-11-18T11:00:00-05:00", "counts_for_stay": true}
     ],
-    "zones": [{"id": "z1", "name": "Chelsea", "bounds": {"ne": {"lat": 40.756, "lng": -73.99}, "sw": {"lat": 40.738, "lng": -74.01}}}],
-    "slots": [{"id": "s1", "kind": "dinner", "date": "2026-11-17", "window": {"start": "17:30", "end": "21:00"}}],
-    "profile": {"diet": ["vegetarian"], "cuisines": ["Mediterranean", "Indian"]},
-    "constraints": {"max_walk_minutes": 15},
-    "response_type": "proposal"
+    "zones": [
+      {"id": "z1", "name": "Chelsea", "bounds": {"ne": {"lat": 40.756, "lng": -73.99}, "sw": {"lat": 40.738, "lng": -74.01}}},
+      {"id": "z2", "name": "TriBeCa", "bounds": {"ne": {"lat": 40.7262, "lng": -73.9985}, "sw": {"lat": 40.7125, "lng": -74.0125}}},
+      {"id": "z3", "name": "Financial District", "bounds": {"ne": {"lat": 40.716, "lng": -73.9985}, "sw": {"lat": 40.701, "lng": -74.02}}}
+    ],
+    "profile": {"stay_preferences": ["quiet street", "private bathroom"]},
+    "budget": {"currency": "USD", "amount": 1000},
+    "roster": ["stay"],
+    "response_type": "stay_shortlist"
   }
 }
 ```
@@ -226,7 +211,7 @@ Every machine message between the Concierge and the specialists is one JSON obje
 | trip\_id | The trip: the BAND room id or a UUID, never built from the city and date. It is also the trip's Cognee session id |
 | user\_id | The BAND user the trip belongs to. It keys the per-user profile and the Cognee dataset names |
 | state\_version | The version of the trip state this message was built on. The Concierge raises it on every change |
-| from, to | Seat names: concierge, stay, restaurant, gym, verifier, routing. to is a list |
+| from, to | Seat names: concierge and stay for now (verifier, routing and gym if they return; the code keeps them behind `--full`). to is a list |
 | sent\_at | ISO 8601 timestamp with an offset |
 | summary | One readable line, because people watch the room in Band Desktop |
 | payload | The object for this type |
@@ -235,56 +220,63 @@ Every machine message between the Concierge and the specialists is one JSON obje
 
 | type | From and to | Payload keys |
 | --- | --- | --- |
-| request | Concierge to Stay, Restaurant, Gym | city, dates, guests, anchors (id, lat, lng, start, end, counts\_for\_stay), zones, slots, profile, constraints, budget (Stay only: it returns no stay priced above it), roster, round (0 to 2), response\_type |
-| proposal | Each specialist to Concierge and Verifier | agent, items, usage |
-| zone\_fit | Restaurant and Gym to Stay | zone\_id, counts of matching restaurants and gyms within a short walk, top\_items (each marked open at the meal windows or, for a gym, able to host the preferred workout slot) |
-| stay\_shortlist | Stay to Concierge | ranked stays priced within the budget, each with rank, deciding\_factor, stay\_id, zone\_id, total\_price, currency and commute times per anchor |
-| stay\_pick | Stay to Restaurant, Gym and Concierge | stay\_id, zone\_id, lat, lng, commute times |
-| workout\_slot | Gym to Restaurant and Concierge | date, start, end, place |
-| preference\_learned | Any agent to Concierge and the specialists it affects | key, value, evidence |
-| conflict | Verifier to the owning agent | rule, item\_id, detail, suggestion |
-| verdict | Verifier to Concierge | status (clear, warn or block), plan\_hash (on clear and warn), conflicts |
+| request | Concierge to Stay | city, dates, guests, meetings (id, address, start, end, counts\_for\_stay; no title, no attendees), anchors (the same with lat and lng instead of the address; the Concierge sends none now, and a request needs meetings or anchors), zones, slots, profile, constraints, budget (the Stay agent returns no stay priced above it), roster, round (0 to 2), response\_type |
+| stay\_shortlist | Stay to Concierge | stays priced within the budget, ranked by average commute, each with rank, deciding\_factor, stay\_id, zone\_id, total\_price, currency, commute times per meeting and average\_commute\_minutes |
+| preference\_learned | Stay to Concierge | key, value, evidence |
+| stay\_pick | Stay to Concierge (and Gym, if it returns) | stay\_id, zone\_id, lat, lng, commute times. The Concierge only holds it for now |
 | error | Any seat to the sender | code, bad\_message\_id, fields |
-| route\_request | Any seat to Routing | origin, destination, depart\_at, modes |
-| route\_reply | Routing to the requester | travel minutes per mode, or an error |
+| proposal (deferred) | A specialist that returns items (the Gym agent, if it returns) to Concierge and Verifier | agent, items, usage |
+| conflict (deferred) | Verifier to the owning agent | rule, item\_id, detail, suggestion |
+| verdict (deferred) | Verifier to Concierge | status (clear, warn or block), plan\_hash (on clear and warn), conflicts |
+| route\_request (deferred) | Concierge or the Stay agent to Routing | origin, destination, depart\_at, modes |
+| route\_reply (deferred) | Routing to the requester | travel minutes per mode, or an error |
 
-Each entry in a `proposal`'s `items` carries `item_id`, `slot_id`, `name`, `address`, `location_precision (exact or zone), lat`, `lng`, `when` (date, start, end), `cost` (currency, amount, basis; a stay total with no fee detail uses `card_total_fees_unknown`), `fit` (reason and the profile fields used), `hours`, `source` (url and `fetched_at`), `reader` (model and whether it escalated) and a dedupe key. Stays add commute times and the free-cancel deadline when the site shows one.
+The rows marked deferred are not Concierge flows for now (see Extensions, items 7 and 8); the code and the contract examples keep them. A `route_request` from the Stay agent is possible if Rohan uses the Routing seat.
 
-**Example proposal** (Restaurant to Concierge and Verifier; illustrative values)
+When a specialist returns `proposal` items (the Gym agent, if it returns), each entry in a `proposal`'s `items` carries `item_id`, `slot_id`, `name`, `address`, `location_precision (exact or zone), lat`, `lng`, `when` (date, start, end), `cost` (currency, amount, basis; a stay total with no fee detail uses `card_total_fees_unknown`), `fit` (reason and the profile fields used), `hours`, `source` (url and `fetched_at`), `reader` (model and whether it escalated) and a dedupe key. Stays add commute times and the free-cancel deadline when the site shows one.
+
+**Example stay shortlist** (Stay to Concierge; illustrative values)
 
 ```json
 {
   "schema_version": "1.0",
-  "type": "proposal",
+  "type": "stay_shortlist",
   "message_id": "b7d0c9ae-3f0a-4e43-8d1e-3a4a7b3f5c21",
   "reply_to": "6f1c2a52-6d0e-4c1b-9a53-1f0f6b2a9e10",
   "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
   "user_id": "demo-user-1",
   "state_version": 2,
-  "from": "restaurant",
-  "to": ["concierge", "verifier"],
+  "from": "stay",
+  "to": ["concierge"],
   "sent_at": "2026-11-14T16:07:12-05:00",
-  "summary": "1 dinner option for Tue 17 Nov in zone z1",
+  "summary": "2 stays within the $1,000 budget; Chelsea ranks first on commute",
   "payload": {
-    "agent": "restaurant",
-    "items": [
+    "stays": [
       {
-        "item_id": "rest-urban-vegan-kitchen",
-        "slot_id": "s1",
-        "name": "Urban Vegan Kitchen",
-        "address": {"street": "265 W 23rd St", "city": "New York", "zip": "10011"},
-        "lat": 40.7445,
-        "lng": -73.9983,
-        "when": {"date": "2026-11-17", "start": "18:30", "end": "19:45"},
-        "cost": {"currency": "USD", "amount": null, "basis": "unknown"},
-        "fit": {"reason": "Fully vegan menu; open until 22:00 on Tuesday", "profile_fields": ["diet"]},
-        "hours": {"Tue": "11:00-22:00"},
-        "source": {"url": "https://urbanvegankitchen.com", "fetched_at": "2026-11-14T16:06:40-05:00"},
-        "reader": {"model": "Qwen/Qwen3.5-4B", "escalated": false},
-        "dedupe_key": "urban-vegan-kitchen|10011"
+        "rank": 1,
+        "deciding_factor": "commute",
+        "stay_id": "stay-chelsea-1",
+        "zone_id": "z1",
+        "name": "Quiet Chelsea studio",
+        "total_price": 640,
+        "currency": "USD",
+        "cost_basis": "card_total_fees_unknown",
+        "commute_minutes": {"B": {"walking": 21, "transit": 12, "driving": 9}, "C": {"walking": 38, "transit": 22, "driving": 14}},
+        "average_commute_minutes": 11.5
+      },
+      {
+        "rank": 2,
+        "deciding_factor": "commute",
+        "stay_id": "stay-tribeca-1",
+        "zone_id": "z2",
+        "name": "TriBeCa loft",
+        "total_price": 780,
+        "currency": "USD",
+        "cost_basis": "total_incl_fees",
+        "commute_minutes": {"B": {"walking": 48, "transit": 24, "driving": 17}, "C": {"walking": 15, "transit": 11, "driving": 8}},
+        "average_commute_minutes": 12.5
       }
-    ],
-    "usage": {"calls": 3, "credits": 118}
+    ]
   }
 }
 ```
@@ -299,104 +291,106 @@ Each entry in a `proposal`'s `items` carries `item_id`, `slot_id`, `name`, `addr
 - **Every send names a recipient.** `band_send_message` needs at least one mention, so `to` is passed as the mentions.
 - **Strict values.** Timestamps are ISO 8601 with an offset; clock times are 24-hour `HH:MM`; hours maps use the keys `Mon` to `Sun` with values like "17:00-22:00" (several periods as a list), all in the trip's one time zone, America/New\_York; money is a number plus a currency code; unknown is `null`, never "n/a"; coordinates are decimal degrees; enum values are lower case and listed in the models.
 - **Small messages.** Send only what the receiver needs and refer to the rest by id. BAND's docs state no length limit, so check the real limit in the first round trip; the trip state travels in the messages and Cognee keeps a copy.
-- **A readable room.** Band Desktop shows these messages as raw JSON, so every message carries a one-line `summary`. The final itinerary to the user is prose from the Concierge, not JSON.
+- **A readable room.** Band Desktop shows these messages as raw JSON, so every message carries a one-line `summary`. The answer to the user (the top three stays) is prose from the Concierge, not JSON.
 - **Contract tests.** The repo holds one valid example of every type and a few invalid ones (a missing field, a wrong type, an unknown version). Each agent's tests round-trip them through `parse_message`, and each stub answers with those examples first.
 
-**Revisions and clearance.** A conflict sends an item back to its owner at most twice (`round` 0 to 2); after that the Concierge delivers the plan with the open conflict shown as a warning. The Verifier answers `clear`, `warn` (something it can't check, such as an unknown opening time) or `block`, and a `clear` or `warn` verdict carries the `plan_hash` of the exact plan it checked. The Concierge delivers only a plan whose hash matches, and shows any warning to the user. Start with exactly these fields; add more only when a real run needs them.
+**Revisions.** The only revision loop in the Concierge's flow is the cheaper-options round. If no stay fits the budget once the fee reserve is added, the Concierge sends the request again asking for cheaper options (`round` 1 and 2, the second also widening the zones). After two rounds it widens the budget and the zone, says so on screen and flags it in the answer. The conflict, `verdict` and `plan_hash` clearance (a conflict sends an item back to its owner at most twice, the Verifier answers `clear`, `warn` or `block`, and the Concierge delivers only a plan whose hash matches) is deferred with the Verifier (see Extensions, item 8). Start with exactly these fields; add more only when a real run needs them.
 
 **Trip state (carried in the BAND messages as versioned JSON; Cognee keeps a copy for memory)**
 
-- Anchors and time windows
-- Budget and the stay price so far
-- Each agent's shortlist and chosen item
-- Open conflicts
+- City, dates and guests
+- Zones, budget and the profile (stay preferences)
+- The Stay agent's shortlist, the Concierge's ranked top stays and the top pick
+- No meeting address: the Concierge holds the meetings in its run, and the Cognee copy names none
 - `state_version`, which the Concierge raises on every change
+
+The deferred full pipeline also puts the meetings' coordinates and time windows, the trips between stay and meetings, and open conflicts in the state (see Extensions, item 8).
 
 Each agent ships a stub that returns valid example messages with fixture data first, so the Concierge is built against it and swapped to live data later. Save the raw response as a fixture on the first successful pull. Fixtures also make the cost comparison fair, because live prices drift between runs.
 
 ## Data, routing and fallbacks
 
-All three specialists find pages with Keenable and read them with Superlinked SIE. Stays are the risky part, because booking sites resist automation. Restaurant and gym pages should be easier.
+The Stay agent finds pages with Keenable and reads them with Superlinked SIE. Stays are the risky part, because booking sites resist automation.
 
-**The shared page reader (Rohan builds it; Jwalin and Prathik reuse it)**
+**The shared page reader (Rohan builds it, Jwalin is proposed to take it over; the Gym agent reuses it if it returns)**
 
 1. Keenable `search_web_pages` finds candidate pages for each zone. Keep recent pages with `acquired_after`; many local pages show only an acquired date, not a published date.
 2. Keenable `fetch_page_content` returns each page as markdown, at its default length (a shorter cap can cut off the footer). Its `prompt` option makes Keenable's own model extract the fields; use that only as a fallback or a benchmark, so SIE does the reading.
-3. Strip images and links, then a small model on SIE (`Qwen/Qwen3.5-4B` through `/v1/chat/completions`) fills the schema: name, address, hours, price, dietary or class details, rating, cancellation terms. Prompt it to copy only from the page and return null when a value isn't shown, and make price level and class types optional. Then `score` ranks the items against the user's preferences. Use an OCR model for menus or timetables that are PDFs or images.
-4. Google Maps geocoding turns the address into lat/lng, because pages carry no coordinates.
-5. Store the source URL and `fetched_at` with every field, so the Verifier can flag what SIE could not read.
+3. Strip images and links, then a small model on SIE (`Qwen/Qwen3.5-4B` through `/v1/chat/completions`) fills the schema: name, address, hours, price, class details, rating, cancellation terms. Prompt it to copy only from the page and return null when a value isn't shown, and make price level and class types optional. Then `score` ranks the items against the user's preferences. Use an OCR model for timetables that are PDFs or images.
+4. Google Maps geocoding turns the address into lat/lng, because pages carry no coordinates. The Stay agent does this, through the Routing seat or Google Maps directly (Rohan decides). It also geocodes the meetings' addresses, because the Concierge no longer sends coordinates.
+5. Store the source URL and `fetched_at` with every field, so a reader can see where each value came from and what SIE could not read (a Verifier would use them, if it returns).
 
-**What a Keenable test showed (14 Nov, restaurants and gyms only).** Generic Manhattan searches returned opening hours and dietary notes (for example a fully vegan menu) from restaurant sites and map pages, weekly hours and addresses for several restaurants on one Keenable place card, and gym day-pass prices from gym sites and a price aggregator dated October 2026. A fetch with a prompt returned JSON with nulls for fields the page didn't state, but gave one gym's address only as "New York City". Expect missing addresses and gluten-free details, and fall back to a place card or a second page. Stays were not tested.
+**What a Keenable test showed (14 Nov, restaurants and gyms only).** Generic Manhattan searches returned opening hours and dietary notes (for example a fully vegan menu) from restaurant sites and map pages, weekly hours and addresses for several restaurants on one Keenable place card, and gym day-pass prices from gym sites and a price aggregator dated October 2026. A fetch with a prompt returned JSON with nulls for fields the page didn't state, but gave one gym's address only as "New York City". Expect missing addresses and gluten-free details, and fall back to a place card or a second page. Stays were not tested. Restaurants are out of scope and gyms are deferred (see Open decisions and Extensions); the restaurant and gym results here and below stay as evidence of how the reader behaves on local-business pages.
 
 **What an SIE extraction test showed (14 Nov, 16 pages: 7 restaurants and 9 gyms or studios, 112 field checks scored by hand).** `Qwen/Qwen3.5-4B`, asked for JSON, got 106 of 112 fields right (95%). `Qwen/Qwen3.8-27B-FP8` got 101 (90%) with the same prompt, because it filled in price levels and class types the pages didn't state. With a tightened prompt (copy only from the page, omit what isn't shown) the 27B reached 110 of 112, while the 4B gained nothing. Cost and speed were close: the 4B took a median 1.8 s and 39 credits per page, the 27B 2.5 s and 43. When a page stated a value, the 4B nearly always got it (prices 8 of 8, dietary tags 6 of 6, full addresses 7 of 7). Its failures: ZIP codes invented when the page had none, a closing time misread ("until 12:30am"), a member-only price taken as a drop-in price, and a price level that wasn't on the page. Other drift: day keys as "Monday" instead of "Mon", capitalised dietary tags, and meal-period hours left as split ranges. The entity model (`fastino/gliner2-large-v1`) gave no structure and returned HTTP 500 on longer pages. Strip images and links, fetch at Keenable's default length (a 20,000-character page is about 5,000 tokens and fits the 4B's context), and ground-check every extracted ZIP, price and hour against the page text. This is one city and 16 pages: a sample, not a benchmark.
 
 **Stays (Rohan).** A 14 Nov test found that Airbnb works through Keenable and Booking.com does not.
 
 - **Airbnb:** Keenable `fetch_page_content` with `live` set to true on an Airbnb search URL (check-in and check-out dates, one adult, USD) returned about ten cards with exact-date totals such as "$159 for 2 nights", plus a rating, review count, bed and bath counts and a tagline, in one to two seconds. No CAPTCHA, login or consent wall appeared. Cards have no listing URL and no street address, and detail pages showed no price, so fee basis, taxes and cancellation terms are unknown.
-- **Map bounds give zones:** adding `search_by_map=true`, `zoom=14` and `ne_lat`, `ne_lng`, `sw_lat`, `sw_lng` to the URL returned cards for that box, labelled by neighborhood (Chelsea, TriBeCa, The Financial District) with landmarks in the tagline. So query one box per candidate zone from the routing tool, and treat each card's location as its zone plus the tagline landmark.
+- **Map bounds give zones:** adding `search_by_map=true`, `zoom=14` and `ne_lat`, `ne_lng`, `sw_lat`, `sw_lng` to the URL returned cards for that box, labelled by neighborhood (Chelsea, TriBeCa, The Financial District) with landmarks in the tagline. So query one box per candidate zone from the request's `zones` (the bounds are in the request), and treat each card's location as its zone plus the tagline landmark.
 - **Booking.com:** the search page showed property names but no usable prices, only a few sponsored hotels with very high totals. Detail pages timed out or showed no price, and identical calls gave different results. Rohan picks the site; this test favoured Airbnb.
 - **Skip Keenable's `prompt` option on these pages:** it returned generic names and null fees. Fetch the raw text and parse it with SIE.
 - **Filters:** keep only cards that say "for 2 nights" (nearby dates appear with other lengths), and drop cards outside Manhattan (one result was in Union City, New Jersey).
 
-Order to try: the Airbnb map-box fetch first; a hotel-price API (Amadeus, SerpApi's Google Hotels or Booking's Demand API) if the demo needs named listings with fees and cancellation terms; a cached snapshot, labelled as cached, as the last resort. Search for candidates first, store stable facts in Cognee, and keep to the shortlist. Rohan decides the order: if the Airbnb data is too complicated to fit the proposal schema (no street address, no listing URL), he can skip it.
-
-**Restaurants and gyms (Jwalin, Prathik).** Run the page reader on each candidate's own page. Ask for what the user's preferences need: opening hours, dietary options on the menu, price level, and for gyms the class timetable and day-pass price. Hours and prices come from page text, so they can be missing or stale; the Verifier flags anything SIE could not read.
+Order to try: the Airbnb map-box fetch first; a hotel-price API (Amadeus, SerpApi's Google Hotels or Booking's Demand API) if the demo needs named listings with fees and cancellation terms. A cached snapshot as a last resort is not built (see Not building). Search for candidates first and keep to the shortlist. Rohan decides the order: if the Airbnb data is too complicated to fit the proposal schema (no street address, no listing URL), he can skip it.
 
 Keenable: the MCP server works without a key on a public tier of 1,000 requests per hour and 10 per second per IP, and a key (starts with keen\_, sent in the X-API-Key header) removes the hourly cap. The keyless limit is per IP address, and venue WiFi usually shares one, so each teammate should use a key. The Keenable deck lists 100K free requests, then $4 per 1,000, plus a $200 credit using the code in the organizers' slides (valid Nov 14 to 15, Pacific time).
 
-**Google Maps (behind the Routing seat, Mario)**
+**Google Maps (behind the Stay agent: the Routing seat or Google Maps directly, Rohan decides; Mario sets up billing)**
+
+The Concierge no longer geocodes or asks for travel times. The Stay agent needs both to rank by commute, so it is the one that calls Google, directly or through the Routing seat.
 
 - Enable billing now; Maps Platform needs it even for the free credit.
 - Enable Geocoding and the Routes API route matrix (Google marks Distance Matrix as legacy). Places and Maps JavaScript aren't needed.
-- Restrict the key, cap its quota and keep it out of git; only the Routing seat holds it.
-- Send one matrix request per mode (walking, transit and driving) and compare the times. Transit matrices are limited to 100 elements, so a coarse grid of about 25 points against two meetings fits. These limits come from a reviewer's read of Google's docs; confirm them in the first call.
+- Restrict the key, cap its quota and keep it out of git; only the component that calls Google holds it (the Routing seat, or the Stay agent if it calls Google directly).
+- Send one matrix request per mode (walking, transit and driving) and compare the times. Transit matrices are limited to 100 elements, so about 25 origins (candidate stays or grid points) against two meetings fits. These limits come from a reviewer's read of Google's docs; confirm them in the first call.
 - Send the meeting times with the New York offset. Arrival time works only for transit.
-- Maps has no best-neighborhood call: score the grid against the meetings after check-in to pick zones, then score real places exactly.
-- Cache every route and geocoding result in the Routing seat.
+- Maps has no best-neighborhood call, and grid scoring of zones is not built (see Not building): v1 uses the request's static zones, and the Stay agent scores the real places against the meetings after check-in.
+- Cache every route and geocoding result in whichever component calls Google.
 - Transport cost isn't calculated for now; only travel time is. The budget check uses the stay price.
 
 ## Cost and small models
 
-Run the cheapest step that works, escalate only when a check fails, and log every call so the swarm-vs-frontier comparison is real numbers.
+Run the cheapest step that works and escalate only when a check fails. The swarm-versus-frontier comparison and the call logging behind it are not built (see Not building).
 
-1. Zones: the Routing seat scores a coarse grid against the meetings after check-in by travel time for walking, transit and driving, plain code.
-2. The specialists search for pages with Keenable, in parallel. No model yet.
-3. A small model on SIE reads each page into the schema (Qwen/Qwen3.5-4B worked in the 14 Nov test), then the SIE reranker scores the items against the user's preferences.
-4. Peer messages: zone fit goes to the Stay agent, which re-ranks with its plain-code score; the stay pick and workout slot go back out.
-5. Each agent ranks its own items with the SIE reranker, such as `Qwen3-Reranker-4B`, against the user's preferences.
+1. Zones: a fixed list of zones per city comes with the request (grid scoring of zones is not built, see Not building).
+2. The Stay agent searches for pages with Keenable, one search per zone, in parallel. No model yet.
+3. A small model on SIE reads each page into the schema (Qwen/Qwen3.5-4B worked in the 14 Nov test).
+4. Hotel ranking: the Stay agent returns hotels ranked by average commute with plain code; the Concierge drops the ones the budget excludes (with the fee reserve) and keeps the top three.
+5. When stay preferences (a quiet street, a private bathroom) are scored, the SIE reranker, such as `Qwen3-Reranker-4B`, ranks the stays against them. Not yet.
 6. Validate: arithmetic, schema and ground checks (every ZIP, price and hour must appear in the page text). Failures go to the 27B model with a tight prompt, then to a frontier model; log the escalation rate.
-7. The Verifier checks the merged plan with plain code.
-8. The Concierge arbitrates conflicts and writes the itinerary, the only routine frontier call.
-9. User feedback goes into the preferences, and the run's traces go to Cognee. The lesson writer is an extension.
+7. The Stay agent finds the meetings' coordinates and the travel times with plain code (Google Maps, directly or through the Routing seat), no model.
+8. The Concierge's model reads the person's message into the trip, the only routine frontier call. The budget check, the order and the answer are plain code. The Verifier check and the Concierge's arbitration and itinerary write-up are deferred (see Extensions, item 8).
+9. User feedback goes into the preferences, and the run's traces go to Cognee. The lesson writer is not built.
 
-- **Cost ledger (an extension, see Extensions):** wraps every model and tool call: tokens, Keenable requests, SIE calls, Maps elements.
+- **Cost ledger: not built (see Not building).** It would have wrapped every model and tool call: tokens, Keenable requests, SIE calls, Maps elements.
 - **Recipes worth copying** from the [Superlinked cookbook](https://github.com/superlinked/cookbook): `route_coding_tasks_to_open_models_first` (small model first, escalate on a failed check) and `keep_facts_current_from_notes`.
-- **Extensions:** the cost comparison, the quality check, the cost ledger and the lesson writer are under Extensions.
+- **Extensions:** the cost comparison, the quality check, the cost ledger and the lesson writer are not built (see Not building).
 
-**Small models on SIE.** The base URL is `https://api.superlinked.com` and requests use `Authorization: Bearer <key>`; Mario holds the key. The account lists 72 models, including `Qwen/Qwen3.5-4B` and `Qwen/Qwen3.8-27B-FP8` for generation, `Qwen/Qwen3-Reranker-4B` for scoring, `lightonai/LightOnOCR-3-4B` and `docling` for documents, `fastino/gliner2-large-v1` for entities, and `superlinked/pii-redact`. Generation works through the OpenAI-compatible `/v1/chat/completions`. `/v1/extract/:model` and `/v1/score/:model` take the model id with `/` written as `__`. Responses report `credits_charged`, which feeds the cost ledger. Recipe names come from a page summary; confirm them in the cookbook repo.
+**Small models on SIE.** The base URL is `https://api.superlinked.com` and requests use `Authorization: Bearer <key>`; Mario holds the key. The account lists 72 models, including `Qwen/Qwen3.5-4B` and `Qwen/Qwen3.8-27B-FP8` for generation, `Qwen/Qwen3-Reranker-4B` for scoring, `lightonai/LightOnOCR-3-4B` and `docling` for documents, `fastino/gliner2-large-v1` for entities, and `superlinked/pii-redact`. Generation works through the OpenAI-compatible `/v1/chat/completions`. `/v1/extract/:model` and `/v1/score/:model` take the model id with `/` written as `__`. Responses report `credits_charged` (the cost ledger that would use it is not built). Recipe names come from a page summary; confirm them in the cookbook repo.
 
-**SIE reranker.** `POST /v1/score/Qwen__Qwen3-Reranker-4B` with `{"query":{"text":"..."},"items":[{"text":"...","id":"..."}],"params":{"instruction":"..."}}`; a plain-string `query` returns 400. It returns `scores` sorted best first, each with `item_id`, `score` and `rank`. Item ids default to `item-N`, so map them back to your input order. It took about 0.5 s and 3 to 6 credits for 7 to 9 items. Rankings were sensible for soft fit (vegetarian-friendly restaurants, HIIT gyms) and identical when the input order was reversed. It doesn't reason about opening times, so hard constraints such as "open Tuesday at dinner" must be code filters on the extracted hours. Use the rank, not the score: scores aren't comparable across queries.
+**SIE reranker.** `POST /v1/score/Qwen__Qwen3-Reranker-4B` with `{"query":{"text":"..."},"items":[{"text":"...","id":"..."}],"params":{"instruction":"..."}}`; a plain-string `query` returns 400. It returns `scores` sorted best first, each with `item_id`, `score` and `rank`. Item ids default to `item-N`, so map them back to your input order. It took about 0.5 s and 3 to 6 credits for 7 to 9 items. Rankings were sensible for soft fit (vegetarian-friendly restaurants, HIIT gyms) and identical when the input order was reversed. It doesn't reason about opening times, so hard constraints such as "open Tuesday at 17:30" must be code filters on the extracted hours. Use the rank, not the score: scores aren't comparable across queries.
 
 ## Memory
 
-Cognee is how the agents remember each user and get better over time. It stores user preferences, the current trip, shared city facts and every agent's traces. An optional lesson writer (an extension) turns each trip into lessons, and Cognee stores those too.
+Cognee is how the agents remember each user and get better over time. It stores user preferences, the current trip and every agent's traces. Shared city facts and the lesson writer are not built (see Not building).
 
-- **User preferences (personal scope):** dietary needs, cuisines, price comfort, gym types, preferred workout times, stay preferences, transport mode, past picks and feedback. Every agent reads them. An agent that learns a preference sends a `preference_learned` message, which the other agents use in the same run. The Concierge is the only writer to Cognee, and it writes the preference to the trip session with `self_improvement` off. Preferences move into permanent memory between trips, when `improve` runs.
-- **Trip state copy (session memory):** anchors, time windows, budget and the stay price so far, each agent's shortlist and open conflicts. The messages carry the live state; Cognee keeps a copy so a late-joining agent or a later run can recall it.
-- **City facts (shared scope):** place facts, hours, price levels, neighborhood traits, commute matrices. Store each with its source URL and `fetched_at`, and expire prices.
-- **Agent traces and lessons (lessons are an extension):** every search, page read, Verifier conflict and user accept or reject is logged to the trip session as an entry. A lesson writer (a small model, run after each trip) turns the run into explicit rules as plain text, for example which Keenable queries returned usable pages, which fields SIE missed on which kind of page, and what the user accepted or rejected and why. Cognee stores the rules. Before its next search, an agent recalls its lessons and uses them to shape that search: query wording, which sources to try first or skip, which fields to double-check. A lesson that doesn't change a search isn't kept. Cognee's `improve` distillation was too weak to rely on (see below).
-- **Promotion is explicit:** only city facts and agent lessons move to shared memory, with a person approving. Preferences and itineraries stay private.
-- **Cross-agent learning:** what one agent learns, the others use at once, through a `preference_learned` message. If the Restaurant agent learns the user eats early, the Gym agent looks for early slots.
+- **User preferences (personal scope):** price comfort, stay preferences, transport mode, past picks and feedback. The Concierge reads them and sends them to the Stay agent in each request's `profile`. An agent that learns a preference sends a `preference_learned` message; with the Stay agent as the only specialist, nobody else uses it in the same run, and the next run's request carries it (other agents would use it at once if they return). The Concierge is the only writer to Cognee, and it writes the preference to the trip session with `self_improvement` off. Preferences would move into permanent memory between trips when `improve` runs, but nothing calls it (see Not building).
+- **Trip state copy (session memory):** city, dates, zones, budget, the Stay agent's shortlist and the Concierge's top stays. It holds no meeting address. The messages carry the live state; Cognee keeps a copy so a late-joining agent or a later run can recall it.
+- **City facts (shared scope): not built.** `save_city_fact` and `recall_city_facts` exist in `memory/` but no seat calls them (see Not building). The design was place facts, hours, price levels, neighborhood traits and commute matrices, each stored with its source URL and `fetched_at`, with prices expiring.
+- **Agent traces (lessons are not built):** every search, page read, ranking, preference learned and user accept or reject is logged to the trip session as an entry (the Verifier's conflicts would join them if it returns). The lesson writer that would turn traces into rules, and agents recalling lessons before a search, are not built (see Not building).
+- **Promotion is explicit:** only city facts and agent lessons would move to shared memory, with a person approving; neither is built (see Not building), so nothing moves. Preferences and trips stay private.
+- **Cross-agent learning:** what one agent learns, the others use at once, through a `preference_learned` message. With one specialist, what the Stay agent learns (a rejected hotel on a noisy street) goes to the Concierge and into the next run's request; learning across specialists returns with the Gym agent.
 - **Feedback:** an accept or reject is written as plain text with its reason, because Cognee ignores its feedback fields, and it updates the preferences.
-- **Demo:** run 1 builds the preferences. Run 2, a new city for the same user, starts from them and asks fewer questions. If the lesson writer is done, the lessons list shows what the agents learned between runs, such as fewer failed searches.
+- **Demo:** run 1 builds the preferences. Run 2 for the same user starts from them: the Concierge sends them to the Stay agent in the request. The offline rehearsal test repeats the demo trip for run 2. The lessons list is not built (see Not building).
 
 **What the Cognee calls do today** (from the Cognee docs)
 
 | Call | What it does today | How we use it |
 | --- | --- | --- |
-| `remember` | With no `session_id`, stores data as permanent graph memory: it ingests, builds the graph, then runs `improve`. With a `session_id`, writes to a fast session cache keyed by user and session, and bridges it into the permanent graph in the background unless `self_improvement` is off | City facts go in as permanent memory. Preferences learned in a run, a copy of each trip's state and the agent steps go in as session entries, and the preferences are bridged to permanent memory between trips |
-| `recall` | Searches the session cache first, then the permanent graph, and tags each result `session` or `graph`. `scope=["trace"]` searches recorded agent traces; `scope=["session_first"]` checks the session before the graph | Agents read preferences, city facts and their own past lessons before each search |
-| `improve` | Bridges sessions into the permanent graph, turns agent trace steps into documents, distills lessons under `session_learnings`, re-weights graph edges from feedback and flags conflicting facts. Tested on 14 Nov: 20 to 80 s per call, one generic lesson after the first run and none after later runs, feedback ignored | Run it between trips, never in a request, to bridge session text into the graph; don't rely on its lessons |
+| `remember` | With no `session_id`, stores data as permanent graph memory: it ingests, builds the graph, then runs `improve`. With a `session_id`, writes to a fast session cache keyed by user and session, and bridges it into the permanent graph in the background unless `self_improvement` is off | City facts are not built (see Not building). Preferences learned in a run, a copy of each trip's state and the agent steps go in as session entries; bridging the preferences to permanent memory between trips needs `improve`, which nothing calls |
+| `recall` | Searches the session cache first, then the permanent graph, and tags each result `session` or `graph`. `scope=["trace"]` searches recorded agent traces; `scope=["session_first"]` checks the session before the graph | The Concierge reads the preferences before each request and sends them to the Stay agent; city facts and lessons are not built |
+| `improve` | Bridges sessions into the permanent graph, turns agent trace steps into documents, distills lessons under `session_learnings`, re-weights graph edges from feedback and flags conflicting facts. Tested on 14 Nov: 20 to 80 s per call, one generic lesson after the first run and none after later runs, feedback ignored | Not called (see Not building). It would run between trips, never in a request, to bridge session text into the graph; don't rely on its lessons |
 
 What this means for our setup:
 
@@ -406,7 +400,7 @@ What this means for our setup:
 - **`improve` is slow and its lessons are weak.** It takes 20 to 80 s per call. On this tenant it wrote one generic lesson after the first run (check venue pages, verify hours separately) and none after runs two and three, it ignored feedback fields, it skipped feedback weighting because the graph backend doesn't support it, and its preference edges did nothing.
 - **What does work:** write preferences and rules as plain conversational QA text, run `improve`, then use plain `recall`. It answered "reject places that close at or before 9 pm or are more than a 12-minute walk away; accept an explicit vegetarian menu". That is retrieval over text, not learned lessons, which is why we write the lessons ourselves.
 - **Only some fields reach the graph:** the QA question and answer, and a trace's function name, status and return value. `feedback_text`, `feedback_score`, QA `context` and trace parameters don't, so put queries, outcomes and accept or reject reasons into the text or the return value.
-- **`improve` costs LLM calls,** so count them in the cost ledger.
+- **`improve` costs LLM calls.** Nothing calls it, and the cost ledger is not built (see Not building).
 
 **Cognee request shapes (tested on 14 Nov).** Headers are `X-Api-Key`, `X-Tenant-Id` and, for JSON, `Content-Type: application/json`.
 
@@ -419,15 +413,15 @@ What this means for our setup:
 
 ## Partner and rubric check
 
-All four partners now do real work: Keenable finds the pages, SIE reads them, Cognee stores preferences and traces, and BAND carries the agent-to-agent messages. Multiplayer and the money comparison are extensions; the rest are covered or listed below.
+All four partners now do real work: Keenable finds the pages, SIE reads them, Cognee stores preferences and traces, and BAND carries the agent-to-agent messages. Multiplayer and the money comparison are not built (see Not building); the rest are covered or listed below.
 
 **Partners**
 
 | Partner | How the plan uses it | Verdict | What to confirm |
 | --- | --- | --- | --- |
-| BAND | Peer messages between agents, the Verifier gate, runtime recruiting, Band Desktop in the demo | Strong; plain-code seats are supported (quickstart) | Re-plan loops are capped at two rounds; the Routing seat adds one message per lookup |
-| Cognee | Preferences, a copy of the trip state, city facts and agent traces, stored and recalled; lessons are an extension | Storage and recall work (tested on 14 Nov); its automatic lessons were weak | Run `improve` between trips only; who writes lessons (extension) |
-| Keenable | Finds and fetches pages for all three agents, with dated results | Strong for restaurants, gyms and Airbnb search cards (tested on 14 Nov); Booking.com was not usable in the test | Whether zone-level Airbnb cards are enough for the demo; a hotel-price API if not |
+| BAND | The Concierge and Stay messages (request, shortlist, cheaper-options round, preference learned) and Band Desktop in the demo. The Verifier gate, Routing as a seat and runtime recruiting beyond the Stay seat are deferred; peer messages between specialists return with the Gym agent | Narrow for now: two seats and a plain request and reply (see the essential-seat table). Plain-code seats are supported (quickstart) for when the Verifier returns | The cheaper-options round is capped at two rounds; the Routing seat would add one message per lookup if the Stay agent uses it |
+| Cognee | Preferences, a copy of the trip state and agent traces, stored and recalled; city facts and lessons are not built | Storage and recall work (tested on 14 Nov); its automatic lessons were weak | `improve` is not called (see Not building) |
+| Keenable | Finds and fetches pages for the Stay agent, with dated results | Strong for Airbnb search cards (tested on 14 Nov; gyms and restaurants worked too, both out of scope for now); Booking.com was not usable in the test | Whether zone-level Airbnb cards are enough for the demo; a hotel-price API if not |
 | Superlinked SIE | A small LLM reads every page into the schema; the reranker scores the items | Strong (tested on 16 pages on 14 Nov: 95% of fields right) | Credits per page (about 40); ground-check every extracted ZIP and number |
 
 **Judging criteria**
@@ -435,30 +429,32 @@ All four partners now do real work: Keenable finds the pages, SIE reads them, Co
 | Criterion | Status | Gap or next step |
 | --- | --- | --- |
 | Most production-ready | Partly | Needs the production basics below |
-| Shared memory that learns | Covered by stored preferences; lessons are an extension | Cognee's `improve` gave weak lessons in the test, so the lesson writer is ours; the demo shows run 1 vs. run 2 |
-| Small-model swarm | Mostly | The cost ledger and quality parity are extensions |
-| Multiplayer agents | Extension | See Extensions |
-| Earns or saves real money | Extension | See Extensions |
-| Cost reduction (organizers' slide) | Extension | The cost ledger and the full comparison are extensions |
+| Shared memory that learns | Covered by stored preferences; lessons are not built | The demo shows run 1 vs. run 2 |
+| Small-model swarm | Mostly | The cost ledger and quality parity are not built |
+| Multiplayer agents | Not built | See Not building |
+| Earns or saves real money | Not built | See Not building |
+| Cost reduction (organizers' slide) | Not built | The cost ledger and the full comparison are not built (see Not building) |
 
-**Production basics (proposed).** Booking deep links when live prices fail, a per-user profile keyed by the BAND user so two users keep separate profiles, an itinerary export as a calendar file, a per-run cost cap, timeouts on every agent call, and one test with a user outside the team.
+**Production basics (proposed).** A per-user profile keyed by the BAND user so two users keep separate profiles, and one test with a user outside the team. Booking deep links, an itinerary export as a calendar file, a per-run cost cap and timeouts on agent calls are not built (see Not building).
 
 ## Extensions
 
-Do these only after the Verifier gate, the peer messages and the Cognee loop work end to end.
+Do these only after the Stay agent's shortlist and the Cognee loop work end to end. The Verifier gate and trip planning (item 8) and the Gym agent (item 7) are deferred extensions of their own.
+
+Decided on 14 Nov: the partner handoff (1), the quality-parity check (3), the calendar connection (4), and the cost ledger and lesson writer (5) will not be built. See Not building.
 
 **1. Multiplayer: partner with other teams**
 
 The aim is agents from different teams working on one task through BAND. Our Concierge becomes a seat other teams' agents can call, and it can call theirs.
 
-- Publish the Concierge in the BAND registry with a clear description of what it accepts and returns, such as "plans a work trip: stay, meals and gym, from meetings and preferences".
-- Keep the public contract small: the request (city, dates, budget, anchors with time windows) and the reply (the cleared plan). Reuse our request and proposal schemas.
+- Publish the Concierge in the BAND registry with a clear description of what it accepts and returns, such as "picks the best stay for a work trip, from meetings and preferences".
+- Keep the public contract small: the request (city, dates, budget, meetings with address and time) and the reply (the top three stays). Reuse our request and stay shortlist schemas.
 - Partner patterns, if other teams build the organizers' example jobs:
   - Inbox team: its agent detects a trip in an email and sends us the request; we reply with the plan.
   - Admin team: its agent takes our plan's prices and builds an expense report.
-  - Hiring or research teams: an interview or meeting schedule becomes our anchors.
+  - Hiring or research teams: an interview or meeting schedule becomes our meetings.
 - Cross-team access needs a BAND contact request that both sides approve. Arrange it at kickoff or on the BAND Discord, not at the end.
-- Privacy: a partner receives the plan, never the user's preferences or meeting details beyond the anchors it sent.
+- Privacy: a partner receives the top three stays, never the user's preferences or meeting details beyond the meetings it sent.
 - Proof: a live handoff in the demo, with the BAND room showing both teams' agents.
 
 **2. Earns or saves money: cost against a traditional LLM agent**
@@ -482,14 +478,14 @@ Cheaper only counts if the picks are as good.
 
 **4. Calendar: connect a user's calendar and find the meetings**
 
-Today the user types the meetings. With a connected calendar, the Concierge reads the events and proposes the anchors itself.
+Today the user types the meetings. With a connected calendar, the Concierge reads the events and proposes the meetings itself.
 
 - Connect the calendar with read-only access, through a calendar API or a calendar connector if one is available. For the demo, use one test account that holds the three New York meetings.
 - Read the events in the trip's date range and keep the ones with a physical location in the destination city. Skip all-day events, declined events and video calls.
-- Turn each kept event into an anchor: geocode the location, take the start and end from the event, and convert time zones. Flag overlapping events.
+- Turn each kept event into a meeting: take the location as the address (the Stay agent finds the coordinates), take the start and end from the event, and convert time zones. Flag overlapping events.
 - Suggest the trip dates from the first and last meeting days, and show them for approval. Never book anything from them.
 - Show the user the meetings it found, with their times, and wait for a yes or a correction before planning.
-- Privacy: only the Concierge reads the calendar. The other agents get anchors with time windows, never titles or attendees, and nothing but the anchors is carried in the trip state.
+- Privacy: only the Concierge reads the calendar. The Stay agent gets meetings with address and time window, never titles or attendees, and no meeting address is carried in the trip state.
 - Proof: in the demo, connect the calendar and let the Concierge list the three meetings back before it starts planning.
 
 **5. Cost ledger and lesson writer (Jwalin or Prathik)**
@@ -502,54 +498,97 @@ These two pieces sit outside the core so Mario's list stays buildable.
 **6. Demo variations**
 
 - Run 2 in the same city with new meetings, to show cache hits and a cheaper second run.
-- Skip the Gym agent when the user doesn't want workouts, to show the runtime roster.
+
+## Not building
+
+Decided on 14 Nov: these will never be built. Where an earlier section of this plan describes one of them, read it as a record of what was considered, not as work to do. Items 7 (the Gym agent) and 8 (trip planning and the Verifier gate), after this list, are different: they are deferred, not dropped.
+
+- **Timeouts for a silent seat.** The HTTP clients (Google Maps, Cognee, the Concierge's model) have timeouts, but nothing handles a seat that never answers.
+- **Grid scoring of zones.** v1 uses static zones only: one fixed list of zones per city.
+- **Production basics:** booking deep links, a calendar-file export of the itinerary and a per-run cost cap. The only cap is the 500-call Google Maps limit in `seats.py`.
+- **A cached-data fallback.** There is no "show the cached snapshot, labelled as cached".
+- **Memory calls that nothing makes.** `consolidate` (Cognee's `improve`, run between trips) and the shared city-facts calls (`save_city_fact`, `recall_city_facts`) are implemented in `memory/`, but no seat calls them and none will. The other memory calls are wired in: `load_profile`, `save_preference`, `save_trip_state` and `log_trace`.
+- **Scoring stay preferences.** Quiet street and private bathroom are not scored.
+- **Extensions:** the cost ledger (a `usage` field exists on each proposal, but nothing sums it), the lesson writer, the partner handoff, the calendar connection and the quality-parity check.
+
+**7. Gym agent (deferred: the Concierge speaks only with the Stay agent for now)**
+
+Not dropped, only parked, so the design is kept here. A Gym agent (Prathik; Keenable pages read by a small model on SIE, with the SIE reranker) finds gyms near the stay, or near the meetings before check-in, picks a workout slot and matches gym preferences. It returns as a second specialist and brings back the peer messages.
+
+- **Messages:** `stay_pick` (Stay to Gym and Concierge: the stay's location and commute times, so the Gym agent searches around it), `workout_slot` (Gym to Concierge: date, start, end and place), `hotel_query` (Concierge to Gym: the candidate hotels with coordinates, a zone's centre when a listing has no address) and `gym_fit` (Gym to Concierge: per hotel, `nearest_gym` with `commute_minutes` and `distance_m`, or null when there is none), plus a `proposal` for the workout with its hours.
+- **Ranking:** the Concierge combines two factors with plain code: the commute to the meetings (0.67) and the commute from the hotel to the nearest gym (0.33). Each factor is a score from 0 to 1 as best divided by this, a hotel with no gym found scores 0 on the gym factor, and if no hotel has a gym the factor is left out. The weights are first guesses.
+- **Open question (Prathik, Mario):** does the Gym agent ask Routing for travel times to its nearest gyms (exact, one message each) or estimate from straight-line distance (free)?
+- **Verifier (deferred too, see item 8):** gains the opening-hours check, so it can block a gym that closes before the workout ends.
+- **Profile and data:** gym type and preferred workout times join the profile. Run the page reader on each gym's own page and ask for opening hours, price level, the class timetable and the day-pass price.
+- **Demo:** the 07:00 workout the user prefers is impossible on Tuesday, because check-in is Tuesday, so the Gym agent posts a workout after meeting B, from about 17:30. When the user skips workouts the Concierge recruits no Gym agent, which shows the runtime roster.
+- The questions to settle first are in [docs/GYM_AGENT_QUESTIONS.md](GYM_AGENT_QUESTIONS.md). Restaurants stay out.
+
+**8. Trip planning and the Verifier gate (deferred: the Concierge speaks only with the Stay agent for now)**
+
+Not dropped, only parked, so the design is kept here. The Concierge speaks only with the Stay agent: no Routing, no Verifier, no Gym and no Restaurant in its conversation. The code keeps the full pipeline behind a flag (`--full` on the CLI; the default is Stay-only), but it is not the plan for now. This is the design that was taken out of the main text:
+
+- **Geocoding and travel times by the Concierge:** the Concierge geocodes each meeting address through the Routing seat and sends the Stay agent `anchors` (id, lat, lng, start, end, `counts_for_stay`) instead of `meetings`. After the Stay agent's shortlist it asks Routing for travel times by mode (walking, transit and driving) for each leg: the trips between the stay and the meetings and between meetings. It proposes the best mode for each trip by travel time. The messages are `route_request` (origin, destination, `depart_at`, modes) and `route_reply` (travel minutes per mode, or an error).
+- **The plan and the itinerary:** the Concierge merges the top stay and the legs (and a workout slot, if the Gym agent returns) into one plan and writes the day-by-day itinerary as prose (a frontier model for arbitration and the write-up only). Only the top stay is planned trip by trip; the other two are ranked and priced. The trip state carries the meetings' coordinates and time windows, the legs and any open conflicts.
+- **The Verifier:** a separate BAND seat running plain code, no LLM (Mario). The Concierge sends it the merged plan. It checks the travel time between the stay and the meetings, such as a morning trip that would arrive after the meeting starts, and the stay price against the budget. When a stay total has an unknown fee basis (`card_total_fees_unknown`), the Concierge adds the fee reserve before the check and the Verifier answers `warn`.
+- **The blockable verdict:** the Verifier answers `clear`, `warn` (something it can't check) or `block`. A `clear` or `warn` verdict carries the `plan_hash` of the exact plan it checked, and the Concierge delivers only a plan whose hash matches and shows any warning to the user. A `conflict` (rule, `item_id`, detail, suggestion) goes to the agent that owns the item, which revises and posts again.
+- **Revisions:** capped at two rounds (`round` 0 to 2). After that the Concierge delivers the plan with the open conflict shown as a warning.
+- **BAND condition:** this brings back the "blockable verdict" row of the essential-seat table, so the Concierge delivers only after the Verifier clears the plan.
+- **Demo:** the Verifier blocks a stay whose morning trip to meeting C would arrive after it starts, the Stay agent offers a replacement, and the Concierge shows the top three stays with the best transport mode for each trip. Rehearse until the block fires every time on fixtures.
+- **When it returns:** an open decision (see Open decisions). The Stay-only run has to work end to end first.
 
 ## Demo and judge questions
 
-Three minutes, one real trip, and each BAND moment named for the condition it shows.
+Three minutes, one real trip, and each BAND moment named for the condition it shows. The Concierge speaks only with the Stay agent, so the demo shows a request, a shortlist, the top three and a remembered preference. It shows no block moment.
 
-1. 0:00 to 0:30: the New York trip (three meetings on 17 and 18 Nov). The stored preferences already know, for example, that the user is vegetarian and an early riser.
-2. 0:30 to 1:30: a live run. Itinerary in. The 07:00 workout the user prefers is impossible on Tuesday, because check-in is Tuesday, so in Band Desktop the Gym agent posts a workout after meeting B, from about 17:30. The Restaurant agent pushes dinner later and nearer the gym, the Verifier blocks a restaurant that closes before that dinner ends, and its owner replaces it. The Stay agent re-ranks on zone fit. Say which BAND condition each moment shows, and rehearse until the block fires every time on fixtures.
-3. 1:30 to 2:15: run 2 in a new city for the same user. It starts from the remembered preferences and asks fewer questions. If the lesson writer is done, show the lessons list.
-4. 2:15 to 2:45: if the extensions are done, show the cost ledger, the swarm vs. all-LLM cost table and the agreement check.
+1. 0:00 to 0:30: the New York trip (three meetings on 17 and 18 Nov, $1,000 for the stay plus transport). The person writes it to the Concierge in the BAND room. The demo user wants a quiet street and a private bathroom.
+2. 0:30 to 1:30: a live run. The Concierge sends one request to the Stay agent with the three meetings (address and time, no titles or attendees), the budget, the zones and the stay preferences. The Stay agent finds the coordinates and travel times itself and answers one shortlist ranked by average commute to the meetings after check-in (meeting A comes before check-in, so it doesn't count). The Concierge drops any stay that is over budget once the fee reserve is added (asking for cheaper options first if none fits) and shows the top three stays with price, average commute, the meetings that counted and the recommended stay. Say which BAND condition each moment shows: the request and shortlist handoff, and the boundary (the Stay agent sees addresses and times, never titles or attendees). Rehearse until it runs every time on fixtures.
+3. 1:30 to 2:15: run 2 for the same user. It starts from the preference remembered in run 1, which the Concierge sends to the Stay agent in the request.
+4. 2:15 to 2:45: not used: the cost ledger, the swarm vs. all-LLM cost table and the agreement check are not built (see Not building).
 5. 2:45 to 3:00: how anyone starts it on Monday: join the BAND room and message the Concierge.
+
+What the demo does not show, so say so if asked: no Verifier block, no day-by-day itinerary, no transport mode for each trip, no workouts and no meals. The answer says itself that it is stays-only: the trips between the stay and the meetings are not planned day by day or checked yet (see Extensions, item 8).
 
 Likely questions:
 
-- **Why do the agents need each other?** Where you sleep decides which gyms and restaurants are walkable, a workout slot decides dinner, and what one agent learns about you changes what the others pick.
-- **How is this cheaper than a normal LLM agent?** Keenable and SIE do the page finding and reading with small models, plain code does the checks, and a frontier model is used only to arbitrate and write the itinerary. The ledger (an extension) shows the split.
+- **Why do the agents need each other?** Where you sleep decides your commute to every meeting, so the Stay agent ranks the stays on it while the Concierge holds the budget and the person's message, and what the Stay agent learns about you changes the next trip's picks. With two seats the case is thinner than with the full set: the separate check that a stay doesn't make one trip impossible (the Verifier) is deferred (see Extensions, item 8).
+- **How is this cheaper than a normal LLM agent?** Keenable and SIE do the page finding and reading with small models, plain code does the ranking and the budget check, and a frontier model is used only to read the person's message into the trip. The cost ledger that would show the split is not built (see Not building).
 - **Terms of service.** Booking and Airbnb restrict scraping. That's acceptable for a hackathon; production would need partner or affiliate APIs. Say so before judges ask.
-- **Privacy.** Itineraries are sensitive. Only city facts and agent lessons go to shared memory, and agents never see meeting names or attendees.
-- **What if live data fails?** Show the cached snapshot, labelled as cached.
+- **Privacy.** Meetings and trips are sensitive. Nothing goes to shared memory (city facts and agent lessons are not built). The Stay agent sees meeting addresses and times, because it needs them to find the commute, but never meeting titles or attendees. The Concierge keeps no address in the trip-state copy it saves to Cognee.
+- **What if live data fails?** There is no cached-data fallback (see Not building).
 
 ## Open decisions
 
-The questions to settle before building the Gym agent are in [docs/GYM_AGENT_QUESTIONS.md](GYM_AGENT_QUESTIONS.md).
+The questions to settle before building the Gym agent, which is deferred, are in [docs/GYM_AGENT_QUESTIONS.md](GYM_AGENT_QUESTIONS.md).
 
 Settled on 14 Nov:
 
 - The budget is one $1,000 total for the stay plus transport (the user provides it in real use). For now only the stay price counts, because transport cost isn't calculated yet, and the Stay agent returns no stay above the budget.
 - One traveler in one room, with a stay from Tuesday check-in to Thursday check-out (two nights).
-- The Concierge proposes the best transport mode for each trip by travel time. Transport covers only trips between the stay and the meetings and between meetings.
-- The demo trip is New York, with one-hour meetings. The demo plans lunch and dinner on Tuesday and Wednesday and one workout each day.
+- The Concierge speaks only with the Stay agent for now: no Routing, Verifier, Gym or Restaurant in its conversation. Trip planning and the Verifier gate are deferred, not dropped (Extensions, item 8; the code keeps the full pipeline behind `--full`). It sends the Stay agent the meetings (address and time, no titles or attendees) and no coordinates, and answers with the top three stays and an honest stays-only line.
+- The Concierge proposes no transport for now, and transport cost isn't calculated. When trip planning returns, it proposes the best transport mode for each trip by travel time (the trips between the stay and the meetings and between meetings).
+- The demo trip is New York, with one-hour meetings. The demo picks the stay: no day-by-day trips, no workouts and no meals.
+- The Restaurant agent is out: no meals are planned, and there is no `restaurant_fit` (or `zone_fit`, which only fed the old ranking).
+- The Gym agent is deferred, not dropped (Extensions keeps its design: `stay_pick`, `workout_slot`, `hotel_query`, `gym_fit` and a second ranking factor). Hotels are ranked by average commute alone, the travel time between the hotel and the meetings that count, to and from, and the Concierge shows the top three.
+- The Stay agent sees meeting addresses and time windows, which it needs to find the commute, and never meeting titles or attendees. The Concierge keeps no address in the trip-state copy it saves to Cognee.
 - Rohan picks the booking site, one for now, whichever the Stay agent prefers. If the Airbnb data is too complicated, he drops it.
-- The Verifier and the Routing component are plain-code BAND seats, and all communication goes through BAND.
+- When the Verifier and the Routing component return, they are plain-code BAND seats, and all communication goes through BAND.
 - Trip state travels as versioned JSON in the BAND messages, and Cognee keeps a copy.
 - The BAND SDK is the latest release, and all four teammates are in one BAND room.
-- The cost ledger, the lesson writer and the demo variations are extensions for Jwalin or Prathik.
+- The cost ledger and the lesson writer are not built (see Not building). The demo variations are extensions for Jwalin or Prathik.
 - SIE's base URL is `https://api.superlinked.com`. Mario holds the key, and it never goes in this document or the repo.
 - H Company is out, and there are no partner prizes, only the organizers' $750, $500 and $250 plus the $500 bonus challenge.
-- There is no backup video; if live data fails, the demo shows the cached snapshot, labelled as cached.
+- There is no backup video and no cached-data fallback (see Not building).
 
 Still open:
 
 - [ ] Stay data (Rohan): Airbnb map-box cards give exact-date totals but no listing URLs, addresses, fee basis or cancellation terms. Is zone-level data enough for the demo, or do we add a hotel-price API?
-- [ ] Stay ranking weights (Rohan): commute has the heaviest weight; set the other weights, the workable-commute limit and the restaurant cap (about five) in the first full run.
-- [ ] Routing over BAND: confirm a route lookup round trip is fast enough, since every lookup is a message.
-- [ ] BAND message limits: the docs state no maximum length. Confirm in the first round trip that a full request and a full proposal arrive intact.
+- [ ] Workable-commute limit (Rohan): the hard filter on the Stay agent's ranking; set it in the first full run.
+- [ ] Jwalin's and Prathik's work (Mario, Jwalin, Prathik): the Restaurant agent is out and the Gym agent is deferred. Proposed: Jwalin the shared page reader. The lesson writer, the cost ledger and the calendar connection are not built (see Not building), so Prathik has no work assigned yet.
+- [ ] Coordinates and commute inside the Stay agent (Rohan decides): who geocodes the meetings' addresses and the stays and computes the travel times, the Routing seat (one message per lookup, so confirm a round trip is fast enough) or Google Maps directly (the Stay agent holds a key). Mario sets up the Google billing either way.
+- [ ] When the Verifier gate returns (Mario, team): the Concierge speaks only with the Stay agent for now. Decide when the Routing and Verifier seats and the day-by-day trip planning come back (see Extensions, item 8), and what has to work first.
+- [ ] BAND message limits: the docs state no maximum length. Confirm in the first round trip that a full request (with the meetings) and a full shortlist arrive intact.
 - [ ] Fee reserve (Mario, with Rohan): the percentage the budget check adds when a stay total's fee basis is unknown.
-- [ ] BAND account (Mario): confirm in the first round trip that all six seats can be registered under one account.
-- [ ] Which partner team's agent do we hand off to (extension)? Not clear yet.
+- [ ] BAND account (Mario): confirm in the first round trip that the seats (Concierge and Stay now, more later) can be registered under one account.
 
 ## Sources
 

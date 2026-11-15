@@ -1,0 +1,94 @@
+{
+  "$defs": {
+    "Mode": {
+      "description": "Travel modes the Routing seat answers for.",
+      "enum": [
+        "walking",
+        "transit",
+        "driving"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "Place": {
+      "description": "Where something is: an address for Routing to geocode, coordinates, or both.",
+      "properties": {
+        "address": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Address"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lng": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lng"
+        }
+      },
+      "title": "Place",
+      "type": "object"
+    }
+  },
+  "description": "Any seat to Routing. An empty `modes` list is a geocode-only lookup: Routing resolves the addresses and returns no minutes.",
+  "properties": {
+    "origin": {
+      "$ref": "#/$defs/Place"
+    },
+    "destination": {
+      "$ref": "#/$defs/Place"
+    },
+    "depart_at": {
+      "format": "date-time",
+      "title": "Depart At",
+      "type": "string"
+    },
+    "modes": {
+      "default": [
+        "walking",
+        "transit",
+        "driving"
+      ],
+      "items": {
+        "$ref": "#/$defs/Mode"
+      },
+      "title": "Modes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "origin",
+    "destination",
+    "depart_at"
+  ],
+  "title": "RouteRequestPayload",
+  "type": "object"
+}

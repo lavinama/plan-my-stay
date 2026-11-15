@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "type": "stay_shortlist",
+  "message_id": "00000000-0000-4000-8000-000000000004",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "stay",
+  "to": [
+    "concierge"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "2 stays within the $1,000 budget; Chelsea ranks first on commute",
+  "payload": {
+    "stays": [
+      {
+        "rank": 1,
+        "deciding_factor": "commute",
+        "stay_id": "stay-chelsea-1",
+        "zone_id": "z1",
+        "name": "Quiet Chelsea studio",
+        "total_price": 640.0,
+        "currency": "USD",
+        "cost_basis": "card_total_fees_unknown",
+        "lat": null,
+        "lng": null,
+        "commute_minutes": {
+          "B": {
+            "walking": 21.0,
+            "transit": 12.0,
+            "driving": 9.0
+          },
+          "C": {
+            "walking": 38.0,
+            "transit": 22.0,
+            "driving": 14.0
+          }
+        },
+        "average_commute_minutes": 11.5
+      },
+      {
+        "rank": 2,
+        "deciding_factor": "gym_fit",
+        "stay_id": "stay-tribeca-1",
+        "zone_id": "z2",
+        "name": "TriBeCa loft",
+        "total_price": 780.0,
+        "currency": "USD",
+        "cost_basis": "total_incl_fees",
+        "lat": null,
+        "lng": null,
+        "commute_minutes": {
+          "B": {
+            "walking": 48.0,
+            "transit": 24.0,
+            "driving": 17.0
+          },
+          "C": {
+            "walking": 15.0,
+            "transit": 11.0,
+            "driving": 8.0
+          }
+        },
+        "average_commute_minutes": 12.5
+      }
+    ]
+  }
+}

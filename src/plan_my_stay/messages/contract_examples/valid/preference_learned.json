@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "type": "preference_learned",
+  "message_id": "00000000-0000-4000-8000-000000000007",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "restaurant",
+  "to": [
+    "concierge",
+    "gym"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Learned: the user eats early",
+  "payload": {
+    "key": "meal_timing",
+    "value": "early",
+    "evidence": "Rejected two 21:00 reservations, accepted 18:00"
+  }
+}

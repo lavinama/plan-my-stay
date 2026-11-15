@@ -1,0 +1,27 @@
+# Copy to agent_config.yaml and fill in. agent_config.yaml holds API keys and is git-ignored:
+# never commit it, paste it into chat or print it.
+#
+# One entry per seat, as in the BAND quickstart. The top-level key is the seat name (the value
+# you pass to run_seat / scripts/run_seat.py); the SDK looks the agent up by that key.
+# In the BAND web app: Agents -> Connect remote agent. Give the agent the display name from
+# band_seats.yaml and a description of at least 10 characters. Copy the ID and the API key from
+# the success dialog right away: the key is shown only once. Each owner needs only their own
+# seat's entry; Mario holds all six.
+concierge:
+  agent_id: "<concierge agent id>"
+  api_key: "<concierge api key>"
+stay:
+  agent_id: "<stay agent id>"
+  api_key: "<stay api key>"
+restaurant:
+  agent_id: "<restaurant agent id>"
+  api_key: "<restaurant api key>"
+gym:
+  agent_id: "<gym agent id>"
+  api_key: "<gym api key>"
+verifier:
+  agent_id: "<verifier agent id>"
+  api_key: "<verifier api key>"
+routing:
+  agent_id: "<routing agent id>"
+  api_key: "<routing api key>"

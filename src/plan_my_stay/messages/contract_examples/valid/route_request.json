@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "type": "route_request",
+  "message_id": "00000000-0000-4000-8000-000000000011",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "stay",
+  "to": [
+    "routing"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Route: Chelsea zone to meeting B at 16:00",
+  "payload": {
+    "origin": {
+      "address": null,
+      "lat": 40.7465,
+      "lng": -74.0014
+    },
+    "destination": {
+      "address": "368 9th Ave, New York, NY 10001",
+      "lat": null,
+      "lng": null
+    },
+    "depart_at": "2026-11-17T15:30:00-05:00",
+    "modes": [
+      "walking",
+      "transit",
+      "driving"
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schema_version": "1.0",
+  "type": "hotel_query",
+  "message_id": "00000000-0000-4000-8000-000000000014",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "concierge",
+  "to": [
+    "gym",
+    "restaurant"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Measure from 2 hotels: nearest gym, restaurants within a 10-minute walk",
+  "payload": {
+    "hotels": [
+      {
+        "stay_id": "stay-chelsea-1",
+        "zone_id": "z1",
+        "name": "Quiet Chelsea studio",
+        "lat": 40.7465,
+        "lng": -74.0014,
+        "location_precision": "exact"
+      },
+      {
+        "stay_id": "stay-tribeca-1",
+        "zone_id": "z2",
+        "name": "TriBeCa loft",
+        "lat": 40.7194,
+        "lng": -74.0055,
+        "location_precision": "zone"
+      }
+    ],
+    "radius_minutes": 10.0
+  }
+}

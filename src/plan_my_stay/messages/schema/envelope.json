@@ -1,0 +1,118 @@
+{
+  "$defs": {
+    "MessageType": {
+      "enum": [
+        "request",
+        "proposal",
+        "zone_fit",
+        "stay_shortlist",
+        "stay_pick",
+        "workout_slot",
+        "preference_learned",
+        "conflict",
+        "verdict",
+        "error",
+        "route_request",
+        "route_reply",
+        "hotel_query",
+        "gym_fit",
+        "restaurant_fit"
+      ],
+      "title": "MessageType",
+      "type": "string"
+    },
+    "Seat": {
+      "description": "The six BAND seats. `to` and `from` in every message use these names.",
+      "enum": [
+        "concierge",
+        "stay",
+        "restaurant",
+        "gym",
+        "verifier",
+        "routing"
+      ],
+      "title": "Seat",
+      "type": "string"
+    }
+  },
+  "description": "Every envelope field except `payload`.",
+  "properties": {
+    "schema_version": {
+      "pattern": "^\\d+\\.\\d+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "type": {
+      "$ref": "#/$defs/MessageType"
+    },
+    "message_id": {
+      "pattern": "^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$",
+      "title": "Message Id",
+      "type": "string"
+    },
+    "reply_to": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reply To"
+    },
+    "trip_id": {
+      "minLength": 1,
+      "title": "Trip Id",
+      "type": "string"
+    },
+    "user_id": {
+      "minLength": 1,
+      "title": "User Id",
+      "type": "string"
+    },
+    "state_version": {
+      "minimum": 0,
+      "title": "State Version",
+      "type": "integer"
+    },
+    "from": {
+      "$ref": "#/$defs/Seat"
+    },
+    "to": {
+      "items": {
+        "$ref": "#/$defs/Seat"
+      },
+      "minItems": 1,
+      "title": "To",
+      "type": "array"
+    },
+    "sent_at": {
+      "format": "date-time",
+      "title": "Sent At",
+      "type": "string"
+    },
+    "summary": {
+      "maxLength": 300,
+      "minLength": 1,
+      "title": "Summary",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "type",
+    "message_id",
+    "trip_id",
+    "user_id",
+    "state_version",
+    "from",
+    "to",
+    "sent_at",
+    "summary"
+  ],
+  "title": "MessageHead",
+  "type": "object"
+}

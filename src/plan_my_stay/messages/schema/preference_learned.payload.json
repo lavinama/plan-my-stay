@@ -1,0 +1,28 @@
+{
+  "$defs": {
+    "JsonValue": {}
+  },
+  "description": "Any agent to the Concierge and the specialists it affects. Only the Concierge writes it to Cognee.",
+  "properties": {
+    "key": {
+      "maxLength": 200,
+      "minLength": 1,
+      "title": "Key",
+      "type": "string"
+    },
+    "value": {
+      "$ref": "#/$defs/JsonValue"
+    },
+    "evidence": {
+      "title": "Evidence",
+      "type": "string"
+    }
+  },
+  "required": [
+    "key",
+    "value",
+    "evidence"
+  ],
+  "title": "PreferenceLearnedPayload",
+  "type": "object"
+}
