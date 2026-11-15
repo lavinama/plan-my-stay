@@ -1,0 +1,111 @@
+{
+  "$defs": {
+    "NearbyRestaurant": {
+      "properties": {
+        "item_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Item Id"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "rank": {
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "walk_minutes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Walk Minutes"
+        }
+      },
+      "required": [
+        "name",
+        "rank"
+      ],
+      "title": "NearbyRestaurant",
+      "type": "object"
+    },
+    "RestaurantFitEntry": {
+      "properties": {
+        "stay_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Stay Id",
+          "type": "string"
+        },
+        "count": {
+          "minimum": 0,
+          "title": "Count",
+          "type": "integer"
+        },
+        "average_rank": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Average Rank"
+        },
+        "top": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/NearbyRestaurant"
+          },
+          "title": "Top",
+          "type": "array"
+        }
+      },
+      "required": [
+        "stay_id",
+        "count"
+      ],
+      "title": "RestaurantFitEntry",
+      "type": "object"
+    }
+  },
+  "description": "Restaurant to Concierge: for each queried hotel, the average rank of the restaurants within the walk radius.",
+  "properties": {
+    "radius_minutes": {
+      "default": 10.0,
+      "exclusiveMinimum": 0,
+      "title": "Radius Minutes",
+      "type": "number"
+    },
+    "hotels": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RestaurantFitEntry"
+      },
+      "title": "Hotels",
+      "type": "array"
+    }
+  },
+  "title": "RestaurantFitPayload",
+  "type": "object"
+}

@@ -238,6 +238,8 @@ class StayOption(Frozen):
     lat: Latitude | None = None
     lng: Longitude | None = None
     commute_minutes: CommuteMinutes = {}
+    # Mean over the meetings that count for the stay of the fastest-mode minutes: what the Stay agent ranks by.
+    average_commute_minutes: Minutes | None = None
 
 
 class Leg(Frozen):

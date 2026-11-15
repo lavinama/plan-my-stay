@@ -12,6 +12,7 @@ from typing import Any
 
 from plan_my_stay.concierge.intake import TripIntake
 from plan_my_stay.enums import Seat
+from plan_my_stay.fit import GymFitEntry, RestaurantFitEntry
 from plan_my_stay.messages import Message
 from plan_my_stay.messages.payloads import (
     ProposalPayload,
@@ -33,6 +34,7 @@ class Phase(StrEnum):
     GEOCODING = "geocoding"  # waiting for Routing to resolve the meeting addresses
     REQUESTED = "requested"  # requests are out; nothing has come back
     COLLECTING = "collecting"  # answers are coming in
+    RANKING = "ranking"  # waiting for Gym and Restaurant to measure from the candidate hotels
     ROUTING = "routing"  # waiting for Routing's travel times for the legs
     REVIEWING = "reviewing"  # the merged plan is with the Verifier
     DELIVERED = "delivered"  # the run is over: the person has the itinerary (or the reason there is none)
@@ -61,6 +63,9 @@ class Run:
     shortlist: StayShortlistPayload | None = None  # None while a (cheaper) answer is awaited
     shortlist_id: str | None = None  # the message that carried it, for `reply_to`
     proposals: Mapping[Seat, ProposalPayload] = field(default_factory=dict)  # the latest, by agent
+    gym_fits: Mapping[str, GymFitEntry] = field(default_factory=dict)  # stay id -> the Gym agent's answer
+    restaurant_fits: Mapping[str, RestaurantFitEntry] = field(default_factory=dict)
+    queried: Mapping[Seat, frozenset[str]] = field(default_factory=dict)  # stay ids each seat was asked about
     workout_slot: WorkoutSlotPayload | None = None
     stay_pick: StayPickPayload | None = None
     pending_legs: Mapping[str, PendingLeg] = field(default_factory=dict)  # route_request message_id -> leg

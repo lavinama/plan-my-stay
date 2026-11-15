@@ -13,6 +13,7 @@ from typing import Any
 from pydantic import Field
 
 from plan_my_stay.enums import Seat
+from plan_my_stay.fit import RankedStay
 from plan_my_stay.models import (
     Anchor,
     Budget,
@@ -48,6 +49,8 @@ class TripState(Frozen):
     round: int = Field(default=0, ge=0, le=2)  # revisions are capped at two; then the Concierge delivers with a warning
     stay: StayOption | None = None
     stay_shortlist: tuple[StayOption, ...] = ()
+    # The Concierge's top hotels, best first. The alternatives are not checked day by day, so they are not in the plan hash.
+    ranked_stays: tuple[RankedStay, ...] = ()
     entries: tuple[PlanEntry, ...] = ()
     legs: tuple[Leg, ...] = ()
     open_conflicts: tuple[Conflict, ...] = ()

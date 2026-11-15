@@ -184,7 +184,8 @@ def test_the_run_waits_until_the_shortlist_and_every_proposal_are_in():
     assert flow.rec.feed(proposal(trip, Seat.RESTAURANT, demo.demo_restaurant_item())) == []
     assert flow.rec.feed(workout_slot(trip)) == [] and flow.rec.feed(stay_pick(trip)) == []
     out = flow.rec.feed(proposal(trip, Seat.GYM, demo.demo_gym_item()))
-    assert messages(out, M.ROUTE_REQUEST, Seat.ROUTING)
+    assert messages(out, M.ROUTE_REQUEST) == []  # first the hotels are measured by Gym and Restaurant
+    assert messages(flow.answer_queries(messages(out, M.HOTEL_QUERY)), M.ROUTE_REQUEST, Seat.ROUTING)
 
 
 def test_the_order_the_answers_arrive_in_does_not_matter():
@@ -194,7 +195,8 @@ def test_the_order_the_answers_arrive_in_does_not_matter():
 
     assert flow.rec.feed(proposal(trip, Seat.GYM, demo.demo_gym_item())) == []
     assert flow.rec.feed(proposal(trip, Seat.RESTAURANT, demo.demo_restaurant_item())) == []
-    assert messages(flow.rec.feed(stay_shortlist(trip, stay())), M.ROUTE_REQUEST)
+    out = flow.rec.feed(stay_shortlist(trip, stay()))
+    assert messages(flow.answer_queries(messages(out, M.HOTEL_QUERY)), M.ROUTE_REQUEST)
 
 
 def test_the_latest_proposal_from_a_seat_replaces_its_earlier_one():

@@ -30,6 +30,9 @@ class MessageType(StrEnum):
     ERROR = "error"
     ROUTE_REQUEST = "route_request"
     ROUTE_REPLY = "route_reply"
+    HOTEL_QUERY = "hotel_query"  # Concierge asks Gym and Restaurant about each candidate hotel
+    GYM_FIT = "gym_fit"  # Gym answers: the nearest gym to each hotel
+    RESTAURANT_FIT = "restaurant_fit"  # Restaurant answers: the average rank of restaurants within a walk
 
 
 class Mode(StrEnum):

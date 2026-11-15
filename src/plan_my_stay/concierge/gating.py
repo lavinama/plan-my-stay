@@ -1,10 +1,12 @@
-"""The budget-gate steps the Concierge takes around the Stay agent's shortlist (SEAT_PROTOCOL section 5, step 6).
+"""The budget-gate steps the Concierge takes around the Stay agent's shortlist (SEAT_PROTOCOL section 5).
 
-`choose_stay` picks the stay to merge (arbitrating a close call and explaining a skipped one). `ask_cheaper` and
-`widen_and_ask` are the two ways to answer "nothing fits": ask Stay for cheaper options (twice), then widen the
-budget and the search area and say so on screen. The Concierge gates and arbitrates; it never ranks.
+`skipped_notes` explains a stay the budget set aside, and `settle_close_call` lets the model arbitrate when the top two
+ranked hotels are a near tie. `ask_cheaper` and `widen_and_ask` are the two ways to answer "nothing fits": ask Stay for
+cheaper options (twice), then widen the budget and the search area and say so on screen. Ranking itself is in
+`ranking.py`; the Concierge ranks the hotels the budget leaves.
 """
 
+from collections.abc import Sequence
 from typing import Any
 
 from plan_my_stay.concierge.fmt import fmt_money
@@ -13,38 +15,49 @@ from plan_my_stay.concierge.gate import (
     arbitrate,
     cheaper_ceiling,
     check_stay,
-    is_close_call,
     widen_budget,
 )
 from plan_my_stay.concierge.outbox import specialist_request
 from plan_my_stay.concierge.run import MAX_ROUNDS, Phase, Result, Run, put, reply
 from plan_my_stay.concierge.zones import widen_zones
 from plan_my_stay.enums import Seat
+from plan_my_stay.fit import RankedStay
 from plan_my_stay.messages import Message
 from plan_my_stay.models import StayOption
 from plan_my_stay.ports import LLMPort
 from plan_my_stay.state import TripState
 
+CLOSE_SCORE_GAP = 0.05  # the top two hotels within this score are a near tie: the model arbitrates (when there is one)
 
-def choose_stay(
-    state: TripState, gate: GateResult, top: StayOption, *, reserve: float, llm: LLMPort | None
-) -> tuple[StayOption, tuple[str, ...]]:
-    """The gate's stay, unless the top two fitting stays are a close call: then arbitrate and explain."""
-    chosen, notes = top, []
-    counting = [a.id for a in state.anchors if a.counts_for_stay]
-    if len(gate.fitting) >= 2 and is_close_call(gate.fitting[0], gate.fitting[1], counting):
-        arbitration = arbitrate(gate.fitting[:2], anchor_ids=counting, llm=llm)
-        chosen = arbitration.chosen
-        notes.append(arbitration.explanation)
+
+def skipped_notes(state: TripState, gate: GateResult, *, reserve: float) -> tuple[str, ...]:
+    """Say why the Stay agent's first pick is not in the ranking: it is over the budget once the fee reserve is added."""
+    notes = []
     for skipped in gate.skipped_stays[:1]:
         check = check_stay(skipped, state.budget, reserve)
         total = fmt_money(check.effective_total, skipped.currency) if check else "more"
         with_reserve = f" with a {reserve:.0%} fee reserve" if check and check.reserve_applied else ""
         name = skipped.name or skipped.stay_id
-        notes.insert(
-            0, f"{name} ranked first but would cost {total}{with_reserve}, over your budget, so it was set aside."
-        )
-    return chosen, tuple(notes)
+        notes.append(f"{name} ranked first but would cost {total}{with_reserve}, over your budget, so it was set aside.")
+    return tuple(notes)
+
+
+def settle_close_call(
+    ranked: tuple[RankedStay, ...], fitting: Sequence[StayOption], *, anchor_ids: Sequence[str], llm: LLMPort | None
+) -> tuple[tuple[RankedStay, ...], tuple[str, ...]]:
+    """When the top two hotels are a near tie and a model is available, let it pick the first and explain the
+    trade-off in two sentences. Without a model, or when it fails, the ranking stands."""
+    if llm is None or len(ranked) < 2 or ranked[0].score - ranked[1].score > CLOSE_SCORE_GAP:
+        return ranked, ()
+    if ranked[0].average_commute_minutes is None or ranked[1].average_commute_minutes is None:
+        return ranked, ()  # no commute data to weigh: the model could only guess, so the tie-break (price) stands
+    by_id = {s.stay_id: s for s in fitting}
+    arbitration = arbitrate([by_id[ranked[0].stay_id], by_id[ranked[1].stay_id]], anchor_ids=anchor_ids, llm=llm)
+    if not arbitration.used_llm:
+        return ranked, ()
+    if arbitration.chosen.stay_id == ranked[1].stay_id:
+        ranked = (ranked[1].model_copy(update={"rank": 1}), ranked[0].model_copy(update={"rank": 2}), *ranked[2:])
+    return ranked, (arbitration.explanation,)
 
 
 def _waiting_for_stay(run: Run, state: TripState, request: Message, **changes: Any) -> Run:

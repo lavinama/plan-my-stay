@@ -2,7 +2,7 @@
 
 `handle_text` starts a run (or takes feedback on a delivered one); `handle` drives the rest from the messages of
 Routing, the specialists and the Verifier. Per-trip state lives in a frozen `Run` replaced on every step. The
-steps themselves are in `pipeline.py`. The Concierge gates the budget and arbitrates; it does not rank stays.
+steps themselves are in `pipeline.py`. The Concierge gates the budget and ranks the hotels from what the specialists return.
 """
 
 import datetime as dt
@@ -17,6 +17,7 @@ from plan_my_stay.concierge.fmt import fmt_day, fmt_money
 from plan_my_stay.concierge.intake import fell_back, parse_trip_request
 from plan_my_stay.concierge.outbox import geocode_request
 from plan_my_stay.concierge.pipeline import Pipeline, Result
+from plan_my_stay.concierge.ranking import Weights
 from plan_my_stay.concierge.run import Phase, Run
 from plan_my_stay.concierge.safe_memory import SafeMemory
 from plan_my_stay.concierge.zones import StaticZones, ZoneProvider
@@ -63,6 +64,7 @@ class ConciergeSeat:
         fee_reserve_pct: float = 0.15,
         zones: ZoneProvider | None = None,
         check_in_time: str = "15:00",
+        weights: Weights | None = None,
     ) -> None:
         if fee_reserve_pct < 0:
             raise ValueError("fee_reserve_pct must not be negative")
@@ -74,6 +76,7 @@ class ConciergeSeat:
             fee_reserve_pct=fee_reserve_pct,
             zones=zones or StaticZones(),
             check_in_time=dt.time.fromisoformat(check_in_time),
+            weights=weights or Weights(),
         )
         self._runs: dict[str, Run] = {}  # by trip_id; each value is replaced, never mutated
         self._latest: dict[str, str] = {}  # person -> their latest trip_id
@@ -84,6 +87,8 @@ class ConciergeSeat:
             MessageType.PROPOSAL: self._pipeline.on_proposal,
             MessageType.WORKOUT_SLOT: self._pipeline.on_workout_slot,
             MessageType.STAY_PICK: self._pipeline.on_stay_pick,
+            MessageType.GYM_FIT: self._pipeline.on_gym_fit,
+            MessageType.RESTAURANT_FIT: self._pipeline.on_restaurant_fit,
             MessageType.PREFERENCE_LEARNED: self._pipeline.on_preference,
             MessageType.VERDICT: self._pipeline.on_verdict,
             MessageType.ERROR: self._pipeline.on_error,

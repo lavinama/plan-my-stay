@@ -4,16 +4,19 @@ Every message is built with `build_message`, like the real seats will. `Recorder
 everything it sends, so a test can assert on the whole conversation. `Flow` drives the demo trip step by step.
 """
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 
 from plan_my_stay import demo
 from plan_my_stay.concierge import ConciergeSeat
 from plan_my_stay.enums import MessageType, Mode, Seat, VerdictStatus
 from plan_my_stay.messages import Message, build_message
+from plan_my_stay.fit import GymFitEntry, NearbyGym, RestaurantFitEntry
 from plan_my_stay.messages.payloads import (
     ErrorPayload,
+    GymFitPayload,
     PreferenceLearnedPayload,
     ProposalPayload,
+    RestaurantFitPayload,
     RouteReplyPayload,
     StayPickPayload,
     StayShortlistPayload,
@@ -196,6 +199,34 @@ def error_message(trip: Message, sender: Seat, bad_message_id: str, code: str = 
     )
 
 
+
+def _per_hotel(query: Message, value: "float | None | Mapping[str, float | None]") -> dict[str, float | None]:
+    """One value for every queried hotel, or a value per stay id (a hotel missing from the mapping gets None)."""
+    ids = [h.stay_id for h in query.payload.hotels]
+    return {i: (value.get(i) if isinstance(value, Mapping) else value) for i in ids}
+
+
+def gym_fit(query: Message, metres: "float | None | Mapping[str, float | None]" = 200.0) -> Message:
+    """The Gym agent's answer to a hotel_query: the nearest gym, `metres` away (a number for all, or per stay id)."""
+    entries = tuple(
+        GymFitEntry(stay_id=i, nearest_gym=None if m is None else NearbyGym(name="Example HIIT Studio", distance_m=m))
+        for i, m in _per_hotel(query, metres).items()
+    )
+    return _send(query, Seat.GYM, MessageType.GYM_FIT, GymFitPayload(hotels=entries), "Nearest gyms", reply_to=query.message_id)
+
+
+def restaurant_fit(
+    query: Message, average_rank: "float | None | Mapping[str, float | None]" = 2.0, count: int = 3
+) -> Message:
+    """The Restaurant agent's answer: `count` restaurants in the radius averaging `average_rank` (None: none in range)."""
+    entries = tuple(
+        RestaurantFitEntry(stay_id=i, count=0) if r is None else RestaurantFitEntry(stay_id=i, count=count, average_rank=r)
+        for i, r in _per_hotel(query, average_rank).items()
+    )
+    payload = RestaurantFitPayload(radius_minutes=query.payload.radius_minutes, hotels=entries)
+    return _send(query, Seat.RESTAURANT, MessageType.RESTAURANT_FIT, payload, "Restaurants nearby", reply_to=query.message_id)
+
+
 class Recorder:
     """Wraps a seat and keeps everything it was sent and everything it sent back."""
 
@@ -244,8 +275,12 @@ class Flow:
         gym: Sequence[ProposalItem] | None = None,
         *,
         gym_answers: bool = True,
+        gym_fits: "float | None | Mapping[str, float | None]" = 200.0,
+        restaurant_fits: "float | None | Mapping[str, float | None]" = 2.0,
+        answer_fits: bool = True,
     ) -> list[Outgoing]:
-        """Stay's shortlist, then the Restaurant's and the Gym's proposals. Returns the output of the last message."""
+        """Stay's shortlist, then the Restaurant's and the Gym's proposals; then, unless `answer_fits` is False, the
+        answers to the hotel queries that follow. Returns the output of the last message (the leg requests)."""
         incoming = [stay_shortlist(self.trip, *(shortlist if shortlist is not None else (stay(),)))]
         incoming.append(
             proposal(
@@ -254,9 +289,29 @@ class Flow:
         )
         if gym_answers:
             incoming.append(proposal(self.trip, Seat.GYM, *(gym if gym is not None else (demo.demo_gym_item(),))))
-        return self.rec.feed_all(incoming)
+        out = self.rec.feed_all(incoming)
+        self.queries = messages(out, MessageType.HOTEL_QUERY)
+        if answer_fits and self.queries:
+            out = self.answer_queries(self.queries, gym_fits, restaurant_fits)
+        return out
+
+    def answer_queries(
+        self,
+        queries: Sequence[Message],
+        gym_fits: "float | None | Mapping[str, float | None]" = 200.0,
+        restaurant_fits: "float | None | Mapping[str, float | None]" = 2.0,
+    ) -> list[Outgoing]:
+        """Answer the Concierge's hotel queries as the Gym and Restaurant agents would; returns the last output."""
+        return self.rec.feed_all(
+            gym_fit(q, gym_fits) if Seat.GYM in q.to else restaurant_fit(q, restaurant_fits) for q in queries
+        )
 
     def answer_legs(self, out: Sequence[Outgoing], minutes: dict[Mode, float | None] | None = None) -> list[Outgoing]:
+        """Answer Routing's leg requests. If `out` still holds hotel queries (a test that fed the specialists by
+        hand), answer those first with neutral numbers so the ranking can run."""
+        queries = messages(out, MessageType.HOTEL_QUERY)
+        if queries:
+            out = self.answer_queries(queries)
         requests = messages(out, MessageType.ROUTE_REQUEST, Seat.ROUTING)
         return self.rec.feed_all(route_reply(r, minutes) for r in requests)
 

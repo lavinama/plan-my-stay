@@ -102,7 +102,9 @@ Changes that make it hold, each from a cost measured above:
 
 > Build the **<Stay | Restaurant | Gym>** agent for Plan My Stay. Read `docs/PLAN.md` (your row, "How agents
 > share information", "Data, routing and fallbacks"), `docs/SEAT_PROTOCOL.md`, and
-> `src/plan_my_stay/rehearsal/stubs.py`: your agent must send the same message types as that stub. You own only
+> `src/plan_my_stay/rehearsal/stubs.py`: your agent must send the same message types as that stub, including the hotel
+> ranking ones (Stay ranks by average commute and sets `average_commute_minutes`; Gym answers a `hotel_query` with a `gym_fit`;
+> Restaurant answers it with a `restaurant_fit`). You own only
 > `src/plan_my_stay/agents/<seat>/` and `tests/agents/<seat>/`. Expose `build(settings)` returning an object whose
 > `handle(message) -> Sequence[Outgoing]` takes one parsed message and returns the messages to send. Build every
 > message with `build_message`; for opening hours reuse `plan_my_stay.verifier.hours.is_open_during`. Never answer

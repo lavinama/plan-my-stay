@@ -11,7 +11,6 @@ from plan_my_stay.concierge.gate import (
     average_commute,
     cheaper_ceiling,
     gate_stay,
-    is_close_call,
     widen_budget,
 )
 from plan_my_stay.concierge.llm import FakeLLM, LLMError
@@ -86,21 +85,6 @@ def test_average_commute_uses_the_fastest_mode_per_anchor():
     assert average_commute(s, ["A1"]) == 20
     assert average_commute(s, ["Z9"]) is None  # no data for that anchor
     assert average_commute(s, []) is None
-
-
-def test_two_stays_close_on_price_and_commute_are_a_close_call():
-    assert is_close_call(
-        stay(1, 600, commute_minutes=commute(10, 20)), stay(2, 610, commute_minutes=commute(11, 21)), ["A0", "A1"]
-    )
-
-
-def test_a_big_price_or_commute_gap_or_missing_data_is_not_a_close_call():
-    a = stay(1, 600, commute_minutes=commute(10))
-
-    assert not is_close_call(a, stay(2, 700, commute_minutes=commute(10)), ["A0"])
-    assert not is_close_call(a, stay(2, 600, commute_minutes=commute(25)), ["A0"])
-    assert not is_close_call(a, stay(2, 600), ["A0"])  # no commute data: cannot tell
-    assert not is_close_call(a, stay(2, 600, currency="EUR", commute_minutes=commute(10)), ["A0"])
 
 
 # --- arbitration with an LLM -------------------------------------------------------------------

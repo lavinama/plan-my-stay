@@ -206,9 +206,11 @@
             "transit": 22.0,
             "driving": 14.0
           }
-        }
+        },
+        "average_commute_minutes": null
       },
       "stay_shortlist": [],
+      "ranked_stays": [],
       "entries": [
         {
           "agent": "gym",

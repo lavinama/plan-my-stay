@@ -96,10 +96,10 @@ Highlighted lines are the Verifier's decisions: a conflict goes to the agent tha
 
 | Seat | Job | Owner | Model tier |
 | --- | --- | --- | --- |
-| Concierge | Talks to the user in the BAND room, holds the private itinerary, proposes the best transport mode for each trip by travel time, checks the top stay against the budget, arbitrates ties and conflicts between the other agents and explains the trade-off to the user (it gates and arbitrates; it does not rank stays), writes the final itinerary | Mario | Frontier, for arbitration and the final write-up only |
-| Stay agent | Finds stays on one site (Airbnb worked best in the 14 Nov test), one map box per zone, drops any stay priced above the budget, then ranks the rest by commute time and the other agents' zone fit with a plain-code score (see How the Stay agent ranks stays) | Rohan | Keenable pages read by a small model on SIE (Qwen3.5-4B); the ranking is plain code, no LLM |
-| Restaurant agent | Finds meals near the meetings and the stay, inside the time windows, matching dietary preferences | Jwalin | Keenable pages read by a small model on SIE (Qwen3.5-4B); SIE reranker |
-| Gym agent | Finds gyms near the stay (or near the meetings before check-in), picks a workout slot, matches gym preferences | Prathik | Keenable pages read by a small model on SIE (Qwen3.5-4B); SIE reranker |
+| Concierge | Talks to the user in the BAND room, holds the private itinerary, proposes the best transport mode for each trip by travel time, checks the top stay against the budget, arbitrates ties and conflicts between the other agents and explains the trade-off to the user (it ranks the hotels the budget leaves from what the Stay, Gym and Restaurant agents each report, see How the Concierge ranks stays, and shows the top three), writes the final itinerary | Mario | Frontier, for arbitration and the final write-up only |
+| Stay agent | Finds stays on one site (Airbnb worked best in the 14 Nov test), one map box per zone, drops any stay priced above the budget, then ranks the rest by average commute time to the meetings that count, with plain code | Rohan | Keenable pages read by a small model on SIE (Qwen3.5-4B); the ranking is plain code, no LLM |
+| Restaurant agent | Finds meals near the meetings and the stay, inside the time windows, matching dietary preferences; for each candidate hotel it reports the average rank of the restaurants within a 10-minute walk | Jwalin | Keenable pages read by a small model on SIE (Qwen3.5-4B); SIE reranker |
+| Gym agent | Finds gyms near the stay (or near the meetings before check-in), picks a workout slot, matches gym preferences; for each candidate hotel it reports the nearest gym by distance | Prathik | Keenable pages read by a small model on SIE (Qwen3.5-4B); SIE reranker |
 | Verifier | Checks opening hours, travel time between events and the stay price against the budget; can block the plan | Mario | Plain code checks, no LLM |
 | Routing | Answers route requests: geocodes addresses and returns travel times for walking, transit and driving at a given time; holds the Google Maps key and caches results | Mario | Plain code, no LLM |
 
@@ -107,10 +107,13 @@ Routing (Google Maps) is a seat: any seat asks it for travel times by message. W
 
 | Message | Who to whom | What it changes |
 | --- | --- | --- |
-| Zone fit: matching restaurants and gyms within a short walk, per zone, with which of the top ones are open at the meal windows or can host the preferred workout slot | Restaurant and Gym to Stay | The Stay agent re-ranks stays by commute plus zone fit |
+| Zone fit: matching restaurants and gyms within a short walk, per zone, with which of the top ones are open at the meal windows or can host the preferred workout slot | Restaurant and Gym to Stay | Informational: their view of each zone. It no longer drives the ranking; the Concierge ranks from the three hotel answers below |
 | Stay pick: the shortlisted or chosen stay's location and commute times | Stay to Restaurant and Gym | Both search around the stay for mornings and evenings |
 | Workout slot: day, start, end and place | Gym to Restaurant | The Restaurant agent sets its dinner window and area around the workout |
-| Stay shortlist: a ranked list of stays within the budget, with total price, commute times and the factor that decided each placement | Stay to Concierge | The Concierge adds the best transport mode by time for each trip, checks the top stay against the budget, arbitrates ties and conflicts, and asks for cheaper options if it's over |
+| Stay shortlist: stays within the budget ranked by average commute, with total price, commute times and the average commute | Stay to Concierge | The Concierge keeps the hotels that fit the budget, asks Gym and Restaurant to measure from each, ranks them, adds the best transport mode by time to the first, and asks for cheaper options if none fits |
+| Hotel query: the candidate hotels with coordinates and a 10-minute walk radius | Concierge to Gym and Restaurant | They answer with the next two rows |
+| Gym fit: the nearest gym to each hotel, by distance | Gym to Concierge | One of the three factors the Concierge ranks on |
+| Restaurant fit: the average rank of the restaurants within a 10-minute walk of each hotel | Restaurant to Concierge | One of the three factors the Concierge ranks on |
 | Preference learned: key, value and evidence | Any agent to the Concierge and the specialists it affects | The affected agents use it in the same run; the Concierge is the only one that writes it to Cognee, for later runs |
 | Conflict: which rule broke and on which item | Verifier to the owning agent | The owner revises and posts again |
 | Route request: origin, destination and time | Any seat to Routing | Routing replies with travel times for walking, transit and driving |
@@ -119,25 +122,21 @@ BAND counts a seat as essential when at least one of these holds:
 
 | Condition | Where it happens in a run |
 | --- | --- |
-| Dependent handoff | Zone fit changes the Stay agent's ranking, the workout slot changes the Restaurant agent's window, and a conflict changes the owner's next search. |
+| Dependent handoff | The hotel candidates change what the Gym and Restaurant agents report and so the Concierge's ranking, the workout slot changes the Restaurant agent's window, and a conflict changes the owner's next search. |
 | Blockable verdict | The Concierge delivers only after the Verifier clears the plan. |
 | Roster at runtime | The Concierge recruits only the agents the request needs, so no Gym agent if the user skips workouts. A partner team's agent can join too (see Extensions). |
 | Enforced boundary | Agents see anchors and time windows, never meeting names or attendees. A partner team's agent joins through a contact request both sides approve (see Extensions). |
 
-**How the Stay agent ranks stays**
+**How the Concierge ranks stays**
 
-The Stay agent ranks the stays, and the Concierge only gates and arbitrates. The Stay agent owns the stay data (price, zone, and commute times from the Routing seat) and receives the `zone_fit` messages from the Restaurant and Gym agents. The Concierge sees neither the listings nor the page-level evidence, and if it did the scoring, every `zone_fit` would pass through a frontier model, which defeats the small-model design. The score is plain code, so it is cheap and testable.
+The Stay agent returns the hotels within the budget ranked by average commute to the meetings that count. For every hotel that fits, the Gym agent reports the nearest gym by distance and the Restaurant agent the average rank of the restaurants within a 10-minute walk. The Concierge combines the three with plain code (`concierge/ranking.py`) and shows the top three. Only the first is planned day by day and checked by the Verifier; the others are ranked and priced.
 
-1. **Hard filters first.** Drop any stay priced above the $1,000 budget, and any stay outside a workable commute of the meetings after check-in. Meetings before check-in don't count (`counts_for_stay` is false).
-2. **Then a weighted score per zone.**
-   - Commute: the average and the worst travel time to the anchors that count. This has the heaviest weight, because the meetings are the fixed points.
-   - Gym fit: whether there is a gym of the user's type near the stay, and whether the preferred workout slot (about 07:00) can work from there.
-   - Restaurant fit: how many options match the diet within a short walk, and how many of the top ones are open at the meal windows.
-   - Stay preferences (quiet street, private bathroom) break ties.
-3. **Rank by the score, not by raw counts.** Counts reward dense, noisy neighborhoods, so cap the credit for extra restaurants after about five.
-4. **Return a ranked shortlist, not one pick,** and say which factor decided each placement (`rank` and `deciding_factor` on each stay in `stay_shortlist`). That gives the Concierge something to arbitrate.
+1. **Hard filters first.** The Stay agent drops any stay priced above the $1,000 budget; the Concierge also drops one that is over once the fee reserve is added. Meetings before check-in don't count (`counts_for_stay` is false).
+2. **Then a weighted score per hotel.** Each factor becomes a score from 0 to 1 as best divided by this (the best hotel is 1, and a near tie stays a near tie). Commute weighs 0.5, gym distance 0.25, restaurant rank 0.25: first guesses to tune in the first full run.
+3. **Missing data ranks a hotel down, it does not drop it.** No gym found, or no restaurant in the radius, scores 0 on that factor. A factor nobody has data for is left out and the other weights renormalise.
+4. **Show the top three and say what decided each placement** (`rank`, `deciding_factor` and the numbers on each ranked stay). Stay preferences (quiet street, private bathroom) are not scored yet.
 
-The Concierge checks the top stay against the budget, resolves ties and conflicts (for example, the best gym zone is a 40-minute commute while the best commute zone has no gym), and explains the trade-off to the user. Only the commute weight is set so far; the other weights, the workable-commute limit and the restaurant cap are first guesses to tune in the first full run.
+The weights are the Concierge's, and a real run is the test of whether commute should weigh as much as the other two together. Averaging ranks favours a hotel with a few top restaurants over one with many good ones; if that shows up, count restaurants in the score too.
 
 Each seat runs as its own process and acts only when mentioned. Build each agent as a plain function that takes a parsed message and returns the messages to send (`handle(message) -> messages`), with one shared `band_adapter` module (built by Mario) that every seat imports: it parses the message, calls `handle()`, posts the answer and retries. Each person writes only `handle()`, so it can be tested without BAND.
 
@@ -238,7 +237,7 @@ Every machine message between the Concierge and the specialists is one JSON obje
 | request | Concierge to Stay, Restaurant, Gym | city, dates, guests, anchors (id, lat, lng, start, end, counts\_for\_stay), zones, slots, profile, constraints, budget (Stay only: it returns no stay priced above it), roster, round (0 to 2), response\_type |
 | proposal | Each specialist to Concierge and Verifier | agent, items, usage |
 | zone\_fit | Restaurant and Gym to Stay | zone\_id, counts of matching restaurants and gyms within a short walk, top\_items (each marked open at the meal windows or, for a gym, able to host the preferred workout slot) |
-| stay\_shortlist | Stay to Concierge | ranked stays priced within the budget, each with rank, deciding\_factor, stay\_id, zone\_id, total\_price, currency and commute times per anchor |
+| stay\_shortlist | Stay to Concierge | stays priced within the budget, ranked by average commute, each with rank, deciding\_factor, stay\_id, zone\_id, total\_price, currency, commute times per anchor and average\_commute\_minutes |
 | stay\_pick | Stay to Restaurant, Gym and Concierge | stay\_id, zone\_id, lat, lng, commute times |
 | workout\_slot | Gym to Restaurant and Concierge | date, start, end, place |
 | preference\_learned | Any agent to Concierge and the specialists it affects | key, value, evidence |
@@ -247,6 +246,9 @@ Every machine message between the Concierge and the specialists is one JSON obje
 | error | Any seat to the sender | code, bad\_message\_id, fields |
 | route\_request | Any seat to Routing | origin, destination, depart\_at, modes |
 | route\_reply | Routing to the requester | travel minutes per mode, or an error |
+| hotel\_query | Concierge to Gym and Restaurant | hotels (stay\_id, zone\_id, lat, lng, location\_precision: a zone's centre when the listing has no address), radius\_minutes (default 10) |
+| gym\_fit | Gym to Concierge | per hotel, nearest\_gym (name, distance\_m, walk\_minutes) or null when there is none |
+| restaurant\_fit | Restaurant to Concierge | radius\_minutes and, per hotel, count of restaurants within the walk, average\_rank of their ranks in the agent's own ranking (null when count is 0) and the top few |
 
 Each entry in a `proposal`'s `items` carries `item_id`, `slot_id`, `name`, `address`, `location_precision (exact or zone), lat`, `lng`, `when` (date, start, end), `cost` (currency, amount, basis; a stay total with no fee detail uses `card_total_fees_unknown`), `fit` (reason and the profile fields used), `hours`, `source` (url and `fetched_at`), `reader` (model and whether it escalated) and a dedupe key. Stays add commute times and the free-cancel deadline when the site shows one.
 
@@ -362,7 +364,7 @@ Run the cheapest step that works, escalate only when a check fails, and log ever
 1. Zones: the Routing seat scores a coarse grid against the meetings after check-in by travel time for walking, transit and driving, plain code.
 2. The specialists search for pages with Keenable, in parallel. No model yet.
 3. A small model on SIE reads each page into the schema (Qwen/Qwen3.5-4B worked in the 14 Nov test), then the SIE reranker scores the items against the user's preferences.
-4. Peer messages: zone fit goes to the Stay agent, which re-ranks with its plain-code score; the stay pick and workout slot go back out.
+4. Hotel ranking: the Stay agent returns hotels ranked by average commute, the Concierge asks Gym and Restaurant to measure from each and ranks them with plain code, and the stay pick and workout slot go out as peer messages.
 5. Each agent ranks its own items with the SIE reranker, such as `Qwen3-Reranker-4B`, against the user's preferences.
 6. Validate: arithmetic, schema and ground checks (every ZIP, price and hour must appear in the page text). Failures go to the 27B model with a tight prompt, then to a frontier model; log the escalation rate.
 7. The Verifier checks the merged plan with plain code.
@@ -509,7 +511,7 @@ These two pieces sit outside the core so Mario's list stays buildable.
 Three minutes, one real trip, and each BAND moment named for the condition it shows.
 
 1. 0:00 to 0:30: the New York trip (three meetings on 17 and 18 Nov). The stored preferences already know, for example, that the user is vegetarian and an early riser.
-2. 0:30 to 1:30: a live run. Itinerary in. The 07:00 workout the user prefers is impossible on Tuesday, because check-in is Tuesday, so in Band Desktop the Gym agent posts a workout after meeting B, from about 17:30. The Restaurant agent pushes dinner later and nearer the gym, the Verifier blocks a restaurant that closes before that dinner ends, and its owner replaces it. The Stay agent re-ranks on zone fit. Say which BAND condition each moment shows, and rehearse until the block fires every time on fixtures.
+2. 0:30 to 1:30: a live run. Itinerary in. The 07:00 workout the user prefers is impossible on Tuesday, because check-in is Tuesday, so in Band Desktop the Gym agent posts a workout after meeting B, from about 17:30. The Restaurant agent pushes dinner later and nearer the gym, the Verifier blocks a restaurant that closes before that dinner ends, and its owner replaces it. The Concierge ranks the hotels on commute, nearest gym and nearby restaurants and shows the top three. Say which BAND condition each moment shows, and rehearse until the block fires every time on fixtures.
 3. 1:30 to 2:15: run 2 in a new city for the same user. It starts from the remembered preferences and asks fewer questions. If the lesson writer is done, show the lessons list.
 4. 2:15 to 2:45: if the extensions are done, show the cost ledger, the swarm vs. all-LLM cost table and the agreement check.
 5. 2:45 to 3:00: how anyone starts it on Monday: join the BAND room and message the Concierge.

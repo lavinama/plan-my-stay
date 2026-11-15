@@ -31,6 +31,7 @@ from plan_my_stay.models import (
     Usage,
     Zone,
 )
+from plan_my_stay.fit import DEFAULT_RADIUS_MINUTES, GymFitEntry, HotelPoint, RestaurantFitEntry
 from plan_my_stay.state import TripState
 from pydantic import ConfigDict
 
@@ -195,6 +196,26 @@ class RouteReplyPayload(Frozen):
         return self
 
 
+class HotelQueryPayload(Frozen):
+    """Concierge to Gym and Restaurant: measure from each of these hotels and answer with gym_fit / restaurant_fit."""
+
+    hotels: tuple[HotelPoint, ...] = Field(min_length=1)
+    radius_minutes: float = Field(default=DEFAULT_RADIUS_MINUTES, gt=0)  # the walk that counts as "near" a restaurant
+
+
+class GymFitPayload(Frozen):
+    """Gym to Concierge: the nearest gym to each queried hotel, by distance."""
+
+    hotels: tuple[GymFitEntry, ...] = ()
+
+
+class RestaurantFitPayload(Frozen):
+    """Restaurant to Concierge: for each queried hotel, the average rank of the restaurants within the walk radius."""
+
+    radius_minutes: float = Field(default=DEFAULT_RADIUS_MINUTES, gt=0)
+    hotels: tuple[RestaurantFitEntry, ...] = ()
+
+
 # The conflict payload is the shared Conflict model: the same shape sits in a verdict and in trip state.
 PAYLOAD_MODELS: dict[MessageType, type[Frozen]] = {
     MessageType.REQUEST: RequestPayload,
@@ -209,4 +230,7 @@ PAYLOAD_MODELS: dict[MessageType, type[Frozen]] = {
     MessageType.ERROR: ErrorPayload,
     MessageType.ROUTE_REQUEST: RouteRequestPayload,
     MessageType.ROUTE_REPLY: RouteReplyPayload,
+    MessageType.HOTEL_QUERY: HotelQueryPayload,
+    MessageType.GYM_FIT: GymFitPayload,
+    MessageType.RESTAURANT_FIT: RestaurantFitPayload,
 }

@@ -123,10 +123,12 @@ def _raw_examples() -> dict[str, dict[str, Any]]:
             4, "stay_shortlist", "stay", ["concierge"], "2 stays within the $1,000 budget; Chelsea ranks first on commute",
             {"stays": [
                 {"rank": 1, "deciding_factor": "commute", "stay_id": "stay-chelsea-1", "zone_id": "z1", "name": "Quiet Chelsea studio",
-                 "total_price": 640, "currency": "USD", "cost_basis": "card_total_fees_unknown", "commute_minutes": _COMMUTE},
+                 "total_price": 640, "currency": "USD", "cost_basis": "card_total_fees_unknown", "commute_minutes": _COMMUTE,
+                 "average_commute_minutes": 11.5},
                 {"rank": 2, "deciding_factor": "gym_fit", "stay_id": "stay-tribeca-1", "zone_id": "z2", "name": "TriBeCa loft",
                  "total_price": 780, "currency": "USD", "cost_basis": "total_incl_fees",
-                 "commute_minutes": {"B": {"walking": 48, "transit": 24, "driving": 17}, "C": {"walking": 15, "transit": 11, "driving": 8}}},
+                 "commute_minutes": {"B": {"walking": 48, "transit": 24, "driving": 17}, "C": {"walking": 15, "transit": 11, "driving": 8}},
+                 "average_commute_minutes": 12.5},
             ]},
         ),
         "stay_pick": _envelope(
@@ -164,6 +166,35 @@ def _raw_examples() -> dict[str, dict[str, Any]]:
             11, "route_request", "stay", ["routing"], "Route: Chelsea zone to meeting B at 16:00",
             {"origin": {"lat": 40.7465, "lng": -74.0014}, "destination": {"address": "368 9th Ave, New York, NY 10001"},
              "depart_at": "2026-11-17T15:30:00-05:00", "modes": ["walking", "transit", "driving"]},
+        ),
+        "hotel_query": _envelope(
+            14, "hotel_query", "concierge", ["gym", "restaurant"],
+            "Measure from 2 hotels: nearest gym, restaurants within a 10-minute walk",
+            {"hotels": [
+                {"stay_id": "stay-chelsea-1", "zone_id": "z1", "name": "Quiet Chelsea studio", "lat": 40.7465, "lng": -74.0014,
+                 "location_precision": "exact"},
+                {"stay_id": "stay-tribeca-1", "zone_id": "z2", "name": "TriBeCa loft", "lat": 40.7194, "lng": -74.0055,
+                 "location_precision": "zone"},
+            ], "radius_minutes": 10},
+        ),
+        "gym_fit": _envelope(
+            15, "gym_fit", "gym", ["concierge"], "Nearest gym: 150 m from Chelsea, none near TriBeCa",
+            {"hotels": [
+                {"stay_id": "stay-chelsea-1", "nearest_gym": {"item_id": "gym-example-hiit", "name": "Example HIIT Studio",
+                                                              "distance_m": 150.5, "walk_minutes": 2.5, "lat": 40.7488, "lng": -73.9971}},
+                {"stay_id": "stay-tribeca-1", "nearest_gym": None},
+            ]},
+            reply_to=_ID(14),
+        ),
+        "restaurant_fit": _envelope(
+            16, "restaurant_fit", "restaurant", ["concierge"], "Restaurants within 10 min: 3 near Chelsea (avg rank 2.7), 0 near TriBeCa",
+            {"radius_minutes": 10, "hotels": [
+                {"stay_id": "stay-chelsea-1", "count": 3, "average_rank": 2.67,
+                 "top": [{"item_id": "rest-urban-vegan-kitchen", "name": "Urban Vegan Kitchen", "rank": 1, "walk_minutes": 6.0},
+                         {"name": "Cafe B", "rank": 3, "walk_minutes": 8.0}, {"name": "Cafe C", "rank": 4, "walk_minutes": 9.5}]},
+                {"stay_id": "stay-tribeca-1", "count": 0, "average_rank": None, "top": []},
+            ]},
+            reply_to=_ID(14),
         ),
         "route_reply": _envelope(
             12, "route_reply", "routing", ["stay"], "Route: 21 min walking, 12 transit, 9 driving",

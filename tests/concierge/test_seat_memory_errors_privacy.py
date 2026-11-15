@@ -161,8 +161,8 @@ def test_a_specialist_that_rejects_its_request_is_asked_twice_more_and_then_drop
 
     (notice,) = replies(out)
     assert "Gym agent" in notice.text and "without it" in notice.text
-    flow.answer_specialists(gym_answers=False)
-    (sent,) = messages(flow.answer_legs(flow.rec.sent[-5:]), M.PROPOSAL, Seat.VERIFIER)
+    out = flow.answer_specialists(gym_answers=False)  # only the Restaurant is asked about the hotels now
+    (sent,) = messages(flow.answer_legs(out), M.PROPOSAL, Seat.VERIFIER)
     out = flow.rec.feed(verdict(flow.trip, VerdictStatus.CLEAR, sent.payload.state.plan_hash()))
     assert "Gym agent was unavailable" in replies(out)[0].text
 

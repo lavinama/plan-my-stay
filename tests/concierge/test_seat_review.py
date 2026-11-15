@@ -135,7 +135,8 @@ def test_a_clear_verdict_for_the_current_plan_delivers_the_itinerary_and_saves_t
     for clock in ("11:00-12:00", "16:00-17:00", "17:30-18:15", "18:30-19:45", "10:00-11:00"):
         assert clock in itinerary.text
     assert memory.saved_states[-1].plan_hash() == sent.payload.state.plan_hash()
-    assert [t["step"] for t in memory.traces] == ["delivered"] and memory.traces[0]["agent"] is Seat.CONCIERGE
+    assert [t["step"] for t in memory.traces] == ["ranked_hotels", "delivered"]  # the ranking is logged, then delivery
+    assert all(t["agent"] is Seat.CONCIERGE for t in memory.traces)
 
 
 def test_a_warn_verdict_is_delivered_and_every_warning_is_shown():

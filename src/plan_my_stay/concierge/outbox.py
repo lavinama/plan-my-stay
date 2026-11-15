@@ -5,14 +5,18 @@ address to resolve it. Specialists and the Verifier get anchors (coordinates and
 carry coordinates only.
 """
 
+from collections.abc import Sequence
+
 from plan_my_stay.concierge.assemble import profile_for, slots_for
 from plan_my_stay.concierge.fmt import fmt_day, fmt_money
 from plan_my_stay.concierge.intake import MeetingIntake
 from plan_my_stay.concierge.legs import LegSpec
 from plan_my_stay.enums import MessageType, Seat
 from plan_my_stay.messages import Message, build_message
+from plan_my_stay.fit import DEFAULT_RADIUS_MINUTES, HotelPoint
 from plan_my_stay.messages.payloads import (
     Constraints,
+    HotelQueryPayload,
     ProposalPayload,
     RequestPayload,
     RouteRequestPayload,
@@ -81,6 +85,21 @@ def specialist_request(
         summary=f"Find {_WHAT[seat]} in {state.city}, {dates}{cap}{note}",
         payload=payload,
         reply_to=reply_to,
+    )
+
+
+def hotel_query(state: TripState, seat: Seat, hotels: Sequence[HotelPoint]) -> Message:
+    """Ask Gym or Restaurant to measure from each candidate hotel (coordinates only: no meeting address)."""
+    what = "nearest gym" if seat is Seat.GYM else f"restaurants within a {DEFAULT_RADIUS_MINUTES:.0f}-minute walk"
+    return build_message(
+        type=MessageType.HOTEL_QUERY,
+        sender=Seat.CONCIERGE,
+        to=[seat],
+        trip_id=state.trip_id,
+        user_id=state.user_id,
+        state_version=state.state_version,
+        summary=f"Measure from {len(hotels)} hotel{'s' if len(hotels) != 1 else ''}: {what}",
+        payload=HotelQueryPayload(hotels=tuple(hotels), radius_minutes=DEFAULT_RADIUS_MINUTES),
     )
 
 

@@ -111,6 +111,19 @@
           "default": {},
           "title": "Commute Minutes",
           "type": "object"
+        },
+        "average_commute_minutes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Average Commute Minutes"
         }
       },
       "required": [

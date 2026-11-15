@@ -1,9 +1,9 @@
 """The budget gate and arbitration helpers.
 
-The Stay agent ranks the stays; the Concierge only gates and arbitrates (docs/PLAN.md, "How the Stay agent
-ranks stays"). `gate_stay` walks the Stay agent's order and returns the first stay that fits the budget once the
-fee reserve is added; it never re-orders the list. `arbitrate` settles a close call between two options and
-explains the trade-off in two sentences, and falls back to the Stay agent's own order when the LLM fails.
+The Stay agent returns the hotels ranked by average commute; the Concierge ranks the ones the budget leaves from what
+the Stay, Gym and Restaurant agents each reported (`ranking.py`). `gate_stay` finds the hotels that fit the budget once
+the fee reserve is added; it never re-orders the list. `arbitrate` settles a near tie between two hotels and explains
+the trade-off in two sentences, and falls back to the order it was given when the LLM fails.
 """
 
 import json
@@ -23,8 +23,6 @@ from plan_my_stay.ports import LLMPort
 logger = logging.getLogger(__name__)
 
 WIDEN_PCT = 0.25  # the last resort when nothing fits: the budget grows by a quarter
-CLOSE_PRICE_PCT = 0.05  # two stays within 5% on price and 3 minutes on commute are a close call
-CLOSE_COMMUTE_MINUTES = 3.0
 
 _SENTENCE_BREAK = re.compile(r"(?<=[.!?])\s+")
 _NUMBER = re.compile(r"\d[\d,]*(?:\.\d+)?")
@@ -104,23 +102,6 @@ def average_commute(stay: StayOption, anchor_ids: Sequence[str]) -> float | None
     return sum(fastest) / len(fastest) if fastest else None
 
 
-def is_close_call(first: StayOption, second: StayOption, anchor_ids: Sequence[str]) -> bool:
-    """Close on price and on commute: the Stay agent's order is a near tie, so the Concierge arbitrates."""
-    if first.currency != second.currency:
-        return False
-    a, b = average_commute(first, anchor_ids), average_commute(second, anchor_ids)
-    if a is None or b is None:
-        return False
-    price_gap = abs(first.total_price - second.total_price)
-    return (
-        price_gap <= CLOSE_PRICE_PCT * max(first.total_price, second.total_price)
-        and abs(a - b) <= CLOSE_COMMUTE_MINUTES
-    )
-
-
-# --- arbitration -------------------------------------------------------------------------------
-
-
 @dataclass(frozen=True)
 class Arbitration:
     """What the Concierge chose between close stays and the two-sentence trade-off it explains to the user."""
@@ -198,7 +179,9 @@ def _fallback(stays: Sequence[StayOption]) -> Arbitration:
 
 def _facts(stay: StayOption, anchor_ids: Sequence[str]) -> str:
     facts = f"total {_money(stay)}; decided on {stay.deciding_factor}"
-    commute = average_commute(stay, anchor_ids) if anchor_ids else None
+    commute = stay.average_commute_minutes  # what the Stay agent reported; else work it out from the per-meeting times
+    if commute is None and anchor_ids:
+        commute = average_commute(stay, anchor_ids)
     return facts + (f"; commute {commute:.0f} min on average" if commute is not None else "")
 
 

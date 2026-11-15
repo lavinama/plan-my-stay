@@ -16,13 +16,13 @@ from plan_my_stay.concierge.assemble import (
     merge_entries,
 )
 from plan_my_stay.concierge.fmt import fmt_money
-from plan_my_stay.concierge.gate import (
-    gate_stay,
-)
-from plan_my_stay.concierge.gating import ask_cheaper, choose_stay, widen_and_ask
+from plan_my_stay.concierge.gate import GateResult, gate_stay
+from plan_my_stay.concierge.gating import ask_cheaper, settle_close_call, skipped_notes, widen_and_ask
+from plan_my_stay.concierge.hotels import hotel_points
 from plan_my_stay.concierge.itinerary import labels_for, render_itinerary
 from plan_my_stay.concierge.legs import leg_gaps, locate_stay, plan_legs
 from plan_my_stay.concierge.outbox import (
+    hotel_query,
     leg_request,
     resend,
     specialist_request,
@@ -38,15 +38,19 @@ from plan_my_stay.concierge.run import (
     put,
     reply,
 )
+from plan_my_stay.concierge.ranking import TOP_N, Weights, rank_hotels
 from plan_my_stay.concierge.safe_memory import SafeMemory
 from plan_my_stay.concierge.transport import build_leg
 from plan_my_stay.concierge.zones import ZoneProvider
 from plan_my_stay.enums import Seat, VerdictStatus
+from plan_my_stay.fit import RankedStay
 from plan_my_stay.messages import Message
 from plan_my_stay.messages.payloads import (
     ErrorPayload,
+    GymFitPayload,
     PreferenceLearnedPayload,
     ProposalPayload,
+    RestaurantFitPayload,
     RouteReplyPayload,
     StayPickPayload,
     StayShortlistPayload,
@@ -60,6 +64,7 @@ from plan_my_stay.state import TripState
 logger = logging.getLogger(__name__)
 
 _COLLECTING = (Phase.REQUESTED, Phase.COLLECTING)
+_FIT_SEATS = (Seat.GYM, Seat.RESTAURANT)  # the specialists asked to measure from each candidate hotel
 _MAX_RESENDS = 2  # a rejected request is sent again at most twice; then the seat is dropped from the run
 
 
@@ -72,12 +77,14 @@ class Pipeline:
         fee_reserve_pct: float,
         zones: ZoneProvider,
         check_in_time: dt.time,
+        weights: Weights = Weights(),
     ) -> None:
         self._memory = memory
         self._llm = llm
         self._reserve = fee_reserve_pct
         self._zones = zones
         self._check_in_time = check_in_time
+        self._weights = weights
 
     # --- small helpers ---------------------------------------------------------------------
 
@@ -192,14 +199,91 @@ class Pipeline:
         return self._gate_and_merge(run) if run.ready_to_gate else (run, [])
 
     def _gate_and_merge(self, run: Run) -> Result:
-        state, shortlist = run.trip, run.shortlist
+        """The budget gate, then the hotels' gym and restaurant numbers, then the ranking and the legs."""
+        shortlist = run.shortlist
         if shortlist is None:
             return run, []
-        gate = gate_stay(shortlist, state.budget, self._reserve)
-        if gate.stay is None:
+        gate = gate_stay(shortlist, run.trip.budget, self._reserve)
+        if not gate.fits:
             return self._nothing_fits(run)
-        chosen, notes = choose_stay(state, gate, gate.stay, reserve=self._reserve, llm=self._llm)
-        return self._route(run, shortlist, chosen, notes)
+        run, queries = self._ask_for_fits(run, gate.fitting)
+        if queries or self._awaiting_fits(run):
+            return run.with_(phase=Phase.RANKING), list(queries)
+        return self._rank_and_route(run, gate)
+
+    # --- ranking: what the Gym and Restaurant agents say about each hotel -------------------
+
+    def _ask_for_fits(self, run: Run, fitting: Sequence[StayOption]) -> tuple[Run, list[Message]]:
+        """Ask each rostered Gym and Restaurant seat about the hotels it has not been asked about yet."""
+        queries: list[Message] = []
+        for seat in _FIT_SEATS:
+            if seat not in run.roster:
+                continue
+            asked = run.queried.get(seat, frozenset())
+            points = hotel_points([s for s in fitting if s.stay_id not in asked], run.trip.zones, run.stay_pick)
+            if not points:
+                continue
+            query = hotel_query(run.trip, seat, points)
+            queries.append(query)
+            run = run.with_(
+                queried=put(run.queried, seat, asked | {p.stay_id for p in points}),
+                requests=put(run.requests, seat, query),
+            )
+        return run, queries
+
+    @staticmethod
+    def _awaiting_fits(run: Run) -> bool:
+        """True while a rostered seat has been asked about a hotel it has not answered."""
+        return any(
+            run.queried.get(seat, frozenset()) - set(Pipeline._fits(run, seat))
+            for seat in _FIT_SEATS
+            if seat in run.roster
+        )
+
+    @staticmethod
+    def _fits(run: Run, seat: Seat) -> dict:
+        return dict(run.gym_fits if seat is Seat.GYM else run.restaurant_fits)
+
+    def on_gym_fit(self, run: Run, message: Message) -> Result:
+        payload: GymFitPayload = message.payload
+        if run.phase is not Phase.RANKING or Seat.GYM not in run.roster:
+            return self.ignore(run, message, "not waiting for gym distances")
+        return self._after_fit(run.with_(gym_fits={**run.gym_fits, **{e.stay_id: e for e in payload.hotels}}))
+
+    def on_restaurant_fit(self, run: Run, message: Message) -> Result:
+        payload: RestaurantFitPayload = message.payload
+        if run.phase is not Phase.RANKING or Seat.RESTAURANT not in run.roster:
+            return self.ignore(run, message, "not waiting for restaurant ranks")
+        return self._after_fit(run.with_(restaurant_fits={**run.restaurant_fits, **{e.stay_id: e for e in payload.hotels}}))
+
+    def _after_fit(self, run: Run) -> Result:
+        """Rank once every seat that was asked has answered."""
+        if run.shortlist is None or self._awaiting_fits(run):
+            return run, []
+        gate = gate_stay(run.shortlist, run.trip.budget, self._reserve)
+        return self._rank_and_route(run, gate) if gate.fits else self._nothing_fits(run)
+
+    def _rank_and_route(self, run: Run, gate: GateResult) -> Result:
+        """Rank the hotels that fit the budget, keep the top three and build the plan around the first."""
+        counting = [a.id for a in run.trip.anchors if a.counts_for_stay]
+        ranked = rank_hotels(
+            gate.fitting,
+            anchor_ids=counting,
+            gym_fits=self._fits(run, Seat.GYM) if Seat.GYM in run.roster else None,
+            restaurant_fits=self._fits(run, Seat.RESTAURANT) if Seat.RESTAURANT in run.roster else None,
+            weights=self._weights,
+            top_n=TOP_N,
+        )
+        ranked, arbitration = settle_close_call(ranked, gate.fitting, anchor_ids=counting, llm=self._llm)
+        chosen = next(s for s in gate.fitting if s.stay_id == ranked[0].stay_id)
+        self._memory.log_trace(
+            trip_id=run.trip_id,
+            user_id=run.user_id,
+            step="ranked_hotels",
+            outcome="top " + ", ".join(f"{r.rank}. {r.stay_id} ({r.score:.2f}, {r.deciding_factor})" for r in ranked),
+        )
+        notes = (*skipped_notes(run.trip, gate, reserve=self._reserve), *arbitration)
+        return self._route(run, run.shortlist, chosen, notes, ranked)
 
     def _nothing_fits(self, run: Run) -> Result:
         budget = run.trip.budget
@@ -213,7 +297,14 @@ class Pipeline:
 
     # --- legs ------------------------------------------------------------------------------
 
-    def _route(self, run: Run, shortlist: StayShortlistPayload, chosen: StayOption, notes: tuple[str, ...]) -> Result:
+    def _route(
+        self,
+        run: Run,
+        shortlist: StayShortlistPayload,
+        chosen: StayOption,
+        notes: tuple[str, ...],
+        ranked: tuple[RankedStay, ...],
+    ) -> Result:
         """Merge the chosen stay and every specialist's items into the state, then ask Routing for the legs."""
         location = locate_stay(chosen, run.stay_pick, run.trip.zones)
         stay = (
@@ -224,6 +315,7 @@ class Pipeline:
         state = run.trip.bump(
             stay=stay,
             stay_shortlist=shortlist.stays,
+            ranked_stays=ranked,
             entries=merge_entries(run.proposals, run.roster),
             legs=(),
             open_conflicts=(),
@@ -366,7 +458,7 @@ class Pipeline:
         run = run.with_(
             warnings=(
                 *run.warnings,
-                f"The {seat.value.capitalize()} agent was unavailable, so this plan has no {seat.value} suggestions.",
+                f"The {seat.value.capitalize()} agent was unavailable, so this plan has no {seat.value} suggestions and the hotels were ranked without that factor.",
             )
         )
         run, out = self._advance(run)

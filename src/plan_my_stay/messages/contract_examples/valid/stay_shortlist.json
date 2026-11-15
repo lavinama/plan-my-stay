@@ -36,7 +36,8 @@
             "transit": 22.0,
             "driving": 14.0
           }
-        }
+        },
+        "average_commute_minutes": 11.5
       },
       {
         "rank": 2,
@@ -60,7 +61,8 @@
             "transit": 11.0,
             "driving": 8.0
           }
-        }
+        },
+        "average_commute_minutes": 12.5
       }
     ]
   }

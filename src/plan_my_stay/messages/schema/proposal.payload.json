@@ -605,6 +605,143 @@
       "title": "ProposalItem",
       "type": "object"
     },
+    "RankedStay": {
+      "description": "One hotel in the Concierge's ranking, with the numbers it was ranked on (None: that agent gave none).",
+      "properties": {
+        "rank": {
+          "minimum": 1,
+          "title": "Rank",
+          "type": "integer"
+        },
+        "stay_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Stay Id",
+          "type": "string"
+        },
+        "zone_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Zone Id",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "total_price": {
+          "minimum": 0,
+          "title": "Total Price",
+          "type": "number"
+        },
+        "currency": {
+          "default": "USD",
+          "pattern": "^[A-Z]{3}$",
+          "title": "Currency",
+          "type": "string"
+        },
+        "cost_basis": {
+          "default": "unknown",
+          "title": "Cost Basis",
+          "type": "string"
+        },
+        "score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Score",
+          "type": "number"
+        },
+        "average_commute_minutes": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Average Commute Minutes"
+        },
+        "nearest_gym_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nearest Gym M"
+        },
+        "nearest_gym_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nearest Gym Name"
+        },
+        "restaurant_count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Restaurant Count"
+        },
+        "restaurant_average_rank": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Restaurant Average Rank"
+        },
+        "deciding_factor": {
+          "title": "Deciding Factor",
+          "type": "string"
+        },
+        "scores": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Scores",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rank",
+        "stay_id",
+        "zone_id",
+        "total_price",
+        "score",
+        "deciding_factor"
+      ],
+      "title": "RankedStay",
+      "type": "object"
+    },
     "Reader": {
       "properties": {
         "model": {
@@ -788,6 +925,19 @@
           "default": {},
           "title": "Commute Minutes",
           "type": "object"
+        },
+        "average_commute_minutes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Average Commute Minutes"
         }
       },
       "required": [
@@ -906,6 +1056,14 @@
             "$ref": "#/$defs/StayOption"
           },
           "title": "Stay Shortlist",
+          "type": "array"
+        },
+        "ranked_stays": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RankedStay"
+          },
+          "title": "Ranked Stays",
           "type": "array"
         },
         "entries": {

@@ -29,7 +29,9 @@ The demo runs the New York trip (three meetings, Tue 17 to Thu 19 Nov, $1,000) t
 one process and prints the room as you would read it in Band Desktop: the Gym agent posts a workout
 after meeting B (07:00 is impossible on check-in day), the Verifier blocks a restaurant that closes
 before dinner ends, its owner replaces it, the Concierge re-plans and delivers the itinerary with the
-fee warning shown, and run 2 starts from the preference run 1 learned. The Stay, Restaurant and Gym
+fee warning shown, and run 2 starts from the preference run 1 learned. Before that, the Concierge ranks the hotels: the Stay
+agent returns them by average commute, the Gym agent reports the nearest gym to each, the Restaurant agent the average rank of the
+restaurants within a 10-minute walk, and the top three go to you with the numbers behind each placement. The Stay, Restaurant and Gym
 seats are stand-ins (`src/plan_my_stay/rehearsal/stubs.py`) until their owners' agents land.
 
 ## Run a seat on BAND
@@ -86,7 +88,9 @@ Write `handle(message) -> messages` and expose `build(settings)` from `src/plan_
 Build every message with `build_message`, round-trip the examples in `src/plan_my_stay/messages/contract_examples/`,
 and reuse `plan_my_stay.verifier.hours.is_open_during` for opening hours. To see your agent deliver an
 itinerary, pass it in place of its stub: `build_rehearsal_seats(overrides={Seat.GYM: build(settings)})`.
-A ready-to-paste brief is in [docs/BUILD_IN_10_MINUTES.md](docs/BUILD_IN_10_MINUTES.md).
+The Stay agent also sets `average_commute_minutes` on each hotel and ranks by it; the Gym agent answers a `hotel_query` with a
+`gym_fit` (the nearest gym per hotel); the Restaurant agent answers it with a `restaurant_fit` (the average rank of the restaurants
+within the walk radius). A ready-to-paste brief is in [docs/BUILD_IN_10_MINUTES.md](docs/BUILD_IN_10_MINUTES.md).
 
 ## What is and isn't verified
 

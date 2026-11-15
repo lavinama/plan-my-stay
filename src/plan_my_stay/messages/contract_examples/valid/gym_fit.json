@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "type": "gym_fit",
+  "message_id": "00000000-0000-4000-8000-000000000015",
+  "reply_to": "00000000-0000-4000-8000-000000000014",
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "gym",
+  "to": [
+    "concierge"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Nearest gym: 150 m from Chelsea, none near TriBeCa",
+  "payload": {
+    "hotels": [
+      {
+        "stay_id": "stay-chelsea-1",
+        "nearest_gym": {
+          "item_id": "gym-example-hiit",
+          "name": "Example HIIT Studio",
+          "distance_m": 150.5,
+          "walk_minutes": 2.5,
+          "lat": 40.7488,
+          "lng": -73.9971
+        }
+      },
+      {
+        "stay_id": "stay-tribeca-1",
+        "nearest_gym": null
+      }
+    ]
+  }
+}

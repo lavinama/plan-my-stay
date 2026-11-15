@@ -16,7 +16,6 @@ from pydantic import (
     AwareDatetime,
     BaseModel,
     Field,
-    SerializeAsAny,
     StringConstraints,
     ValidationError,
     model_validator,
@@ -49,6 +48,9 @@ ALLOWED_SENDERS: dict[MessageType, frozenset[Seat]] = {
     MessageType.ERROR: frozenset(Seat),
     MessageType.ROUTE_REQUEST: frozenset(Seat) - {Seat.ROUTING},
     MessageType.ROUTE_REPLY: frozenset({Seat.ROUTING}),
+    MessageType.HOTEL_QUERY: frozenset({Seat.CONCIERGE}),
+    MessageType.GYM_FIT: frozenset({Seat.GYM}),
+    MessageType.RESTAURANT_FIT: frozenset({Seat.RESTAURANT}),
 }
 
 
@@ -69,7 +71,9 @@ class MessageHead(Frozen):
 
 
 class Message(MessageHead):
-    payload: SerializeAsAny[BaseModel]
+    # Typed Any so a handler can say `payload: GymFitPayload = message.payload` without a cast. It is always the model for
+    # `type` (the validator below), and pydantic serializes an Any field by its runtime type.
+    payload: Any
 
     @model_validator(mode="after")
     def _payload_matches_type(self) -> "Message":

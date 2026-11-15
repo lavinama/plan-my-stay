@@ -24,3 +24,8 @@ def fmt_clock(moment: dt.datetime) -> str:
 def fmt_minutes(minutes: float) -> str:
     """`25 min`, `4.5 min`."""
     return f"{minutes:g} min"
+
+
+def fmt_distance(metres: float) -> str:
+    """`150 m`, `1.2 km`."""
+    return f"{round(metres)} m" if metres < 1000 else f"{metres / 1000:.1f} km"

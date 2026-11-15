@@ -1,0 +1,117 @@
+{
+  "$defs": {
+    "GymFitEntry": {
+      "properties": {
+        "stay_id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Stay Id",
+          "type": "string"
+        },
+        "nearest_gym": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NearbyGym"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "stay_id"
+      ],
+      "title": "GymFitEntry",
+      "type": "object"
+    },
+    "NearbyGym": {
+      "properties": {
+        "item_id": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Item Id"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "distance_m": {
+          "minimum": 0,
+          "title": "Distance M",
+          "type": "number"
+        },
+        "walk_minutes": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Walk Minutes"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lng": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lng"
+        }
+      },
+      "required": [
+        "name",
+        "distance_m"
+      ],
+      "title": "NearbyGym",
+      "type": "object"
+    }
+  },
+  "description": "Gym to Concierge: the nearest gym to each queried hotel, by distance.",
+  "properties": {
+    "hotels": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/GymFitEntry"
+      },
+      "title": "Hotels",
+      "type": "array"
+    }
+  },
+  "title": "GymFitPayload",
+  "type": "object"
+}

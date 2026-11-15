@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "type": "restaurant_fit",
+  "message_id": "00000000-0000-4000-8000-000000000016",
+  "reply_to": "00000000-0000-4000-8000-000000000014",
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "restaurant",
+  "to": [
+    "concierge"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Restaurants within 10 min: 3 near Chelsea (avg rank 2.7), 0 near TriBeCa",
+  "payload": {
+    "radius_minutes": 10.0,
+    "hotels": [
+      {
+        "stay_id": "stay-chelsea-1",
+        "count": 3,
+        "average_rank": 2.67,
+        "top": [
+          {
+            "item_id": "rest-urban-vegan-kitchen",
+            "name": "Urban Vegan Kitchen",
+            "rank": 1,
+            "walk_minutes": 6.0
+          },
+          {
+            "item_id": null,
+            "name": "Cafe B",
+            "rank": 3,
+            "walk_minutes": 8.0
+          },
+          {
+            "item_id": null,
+            "name": "Cafe C",
+            "rank": 4,
+            "walk_minutes": 9.5
+          }
+        ]
+      },
+      {
+        "stay_id": "stay-tribeca-1",
+        "count": 0,
+        "average_rank": null,
+        "top": []
+      }
+    ]
+  }
+}

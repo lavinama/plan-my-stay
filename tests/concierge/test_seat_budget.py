@@ -57,7 +57,8 @@ def test_the_cheaper_answer_goes_on_to_routing():
         stay_shortlist(flow.trip, stay(1, 700, CostBasis.CARD_TOTAL_FEES_UNKNOWN))
     )  # 805 with the reserve
 
-    assert messages(out, M.ROUTE_REQUEST, Seat.ROUTING)
+    assert messages(out, M.HOTEL_QUERY)  # the hotel that fits is measured before the legs are asked for
+    assert messages(flow.answer_queries(messages(out, M.HOTEL_QUERY)), M.ROUTE_REQUEST, Seat.ROUTING)
 
 
 def test_a_lower_ranked_stay_that_fits_is_taken_and_the_skipped_one_is_explained():

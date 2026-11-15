@@ -13,7 +13,10 @@
         "verdict",
         "error",
         "route_request",
-        "route_reply"
+        "route_reply",
+        "hotel_query",
+        "gym_fit",
+        "restaurant_fit"
       ],
       "title": "MessageType",
       "type": "string"

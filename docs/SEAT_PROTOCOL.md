@@ -31,10 +31,13 @@ not say, it is marked **New** and listed in "Decisions to confirm with the team"
 | --- | --- | --- |
 | Person to Concierge | free text (`handle_text`) | The Concierge replies with `TextReply`. |
 | Concierge to Stay / Restaurant / Gym | `request` | Stay gets `budget` and `response_type="stay_shortlist"`. Only seats in `roster` are asked. |
-| Restaurant, Gym to Stay | `zone_fit` | Per zone. |
+| Restaurant, Gym to Stay | `zone_fit` | Per zone. Informational since the Concierge ranks hotels: it no longer drives a ranking. |
 | Stay to Restaurant, Gym, Concierge | `stay_pick` | Shortlisted or chosen stay and its commute times. |
 | Gym to Restaurant, Concierge | `workout_slot` | |
-| Stay to Concierge | `stay_shortlist` | Ranked, within budget. Empty list = nothing fits. |
+| Stay to Concierge | `stay_shortlist` | Ranked by average commute (`average_commute_minutes` on each stay), within budget. Empty list = nothing fits. |
+| **New** Concierge to Gym, Restaurant | `hotel_query` | The hotels that fit the budget, each with coordinates (a zone's centre when the listing has no address) and `radius_minutes` (10). One message per seat. |
+| **New** Gym to Concierge | `gym_fit` | For each hotel, the nearest gym by distance (`nearest_gym` is null when there is none). `reply_to` = the query. |
+| **New** Restaurant to Concierge | `restaurant_fit` | For each hotel, how many restaurants are within the walk radius and the average of their ranks in the Restaurant agent's own ranking (1 is best). |
 | Specialists to Concierge and Verifier | `proposal` | `payload.agent` is the sender. |
 | Any specialist to Concierge (+ affected) | `preference_learned` | Only the Concierge writes it to memory. |
 | Any seat to Routing | `route_request` | See section 3. |
@@ -116,19 +119,52 @@ warning to the user. After `round` 2 it delivers with the open conflicts shown a
 4. Send `request`s to the roster. Stay also gets `budget`.
 5. Collect `stay_shortlist`, `proposal`s, `workout_slot`, `stay_pick`, `preference_learned`. Peer
    messages go between specialists directly; the Concierge only sees what is addressed to it.
-6. Check the top stay against the budget with `check_budget`. If it is over, ask Stay for
-   cheaper options (`request`, `round + 1`) or widen the zone or budget, and say so on screen.
-7. Ask Routing for the legs (stay to and from each later anchor, between events), choose the
+6. Keep the hotels that fit the budget with `check_budget` (the fee reserve is added when fees are
+   unknown). If none fits, ask Stay for cheaper options (`request`, `round + 1`) or widen the zone or
+   budget, and say so on screen.
+7. **Rank the hotels** (section 5a): send each rostered Gym and Restaurant seat a `hotel_query`, wait
+   for `gym_fit` and `restaurant_fit`, rank, keep the top three and build the plan around the first.
+8. Ask Routing for the legs (stay to and from each later anchor, between events), choose the
    fastest mode per leg (plain code, no LLM), merge everything into `TripState`, bump
    `state_version` and send the merged plan to the Verifier.
-8. On `verdict`: `clear` or `warn` with a matching hash, so write the itinerary (frontier model,
+9. On `verdict`: `clear` or `warn` with a matching hash, so write the itinerary (frontier model,
    with a template fallback) and send it with `TextReply`. `block`, so wait for the owners'
    revised proposals, re-merge (`round + 1`, at most 2), send again.
-9. Write learned preferences and the trip-state copy to memory. Accept or reject feedback from the
+10. Write learned preferences and the trip-state copy to memory. Accept or reject feedback from the
    user is written as plain text with its reason.
 
 The Concierge is the only writer of preferences and trip state to memory. Memory is best effort:
 if it is down, planning continues and the itinerary says nothing about it.
+
+## 5a. How the Concierge ranks hotels
+
+The plan first had the Stay agent rank hotels and the Concierge only gate and arbitrate. **Changed:** the
+Stay agent returns hotels ranked by average commute, each specialist reports one number per hotel, and the
+Concierge combines them (`concierge/ranking.py`, plain code). It shows the top three; only the first is
+planned day by day and checked by the Verifier (the others are ranked and priced).
+
+| Factor | Who measures it | Value | Weight |
+| --- | --- | --- | --- |
+| Commute | Stay agent (`average_commute_minutes`) | Mean over the meetings that count for the stay of the fastest mode's minutes; lower is better | 0.50 |
+| Gym | Gym agent (`gym_fit`) | Distance in metres to the nearest gym, straight line from the hotel; lower is better | 0.25 |
+| Restaurants | Restaurant agent (`restaurant_fit`) | Average rank of the restaurants within a 10-minute walk, 1 being the best; lower is better | 0.25 |
+
+- **Score per factor, 0 to 1:** `(best + offset) / (this + offset)` over the hotels, with offsets of 1 minute,
+  100 m and 0 ranks. The best hotel gets 1, and a near tie stays a near tie. The total is the weighted
+  average. Weights are a first guess (`Weights`, a `ConciergeSeat` option); commute counts most because the
+  meetings are the fixed points.
+- **Missing data scores 0, it does not drop the hotel:** no gym found, no restaurant in the radius, or a
+  hotel an agent did not report. A factor with no data anywhere (that agent is not in the run, or found
+  nothing for any hotel) is left out and the other weights renormalise.
+- **Where a hotel is:** its own coordinates, else the Stay agent's pick, else the centre of its zone
+  (`location_precision` = zone). Airbnb cards carry no address, so zone-level is the common case.
+- **Walk radius:** "within 10 minutes" is a straight-line estimate (distance times 1.3 for streets, at
+  4.8 km/h: about 615 m, `plan_my_stay.geo`). A real Restaurant agent may use Routing's walking times.
+- **Ties:** equal scores break on commute, then price, then the Stay agent's order. A near tie (within 0.05)
+  between the top two is put to the model (when there is one and both have a commute) to choose and explain.
+- **A known bias:** averaging ranks rewards a hotel with a few top restaurants over one with many good ones,
+  and the plan warns that counts reward dense, noisy neighbourhoods. Raise `count` into the score if that
+  shows up in real runs.
 
 ## 6. The `band_adapter`
 
@@ -185,5 +221,7 @@ forge another entry; per-user privacy rests on the `user=` label, which every re
 2. **Geocode-only Routing lookup** (`modes=[]`) so the Concierge can turn addresses into anchors.
 3. **Static zones per city for v1.** The plan's grid scoring by Routing is not built.
 4. **Fee reserve default 15%** (`FEE_RESERVE_PCT`), a placeholder the plan leaves to Mario and Rohan.
-5. **Routing lookups are one message each.** If the first live round trip is slow, batch
+5. **The Concierge ranks hotels** (section 5a), reversing the plan's "it does not rank stays". Three new message
+   types, weights 0.5/0.25/0.25, a 10-minute straight-line walk, and a top three of which only #1 is verified.
+6. **Routing lookups are one message each.** If the first live round trip is slow, batch
    origins and destinations in one `route_request`.

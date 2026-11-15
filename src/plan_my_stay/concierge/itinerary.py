@@ -13,10 +13,11 @@ import logging
 import re
 from collections.abc import Mapping, Sequence
 
-from plan_my_stay.concierge.fmt import fmt_clock, fmt_day, fmt_minutes, fmt_money
+from plan_my_stay.concierge.fmt import fmt_clock, fmt_day, fmt_distance, fmt_minutes, fmt_money
 from plan_my_stay.concierge.timeline import Event, build_events
+from plan_my_stay.fit import DEFAULT_RADIUS_MINUTES, RankedStay
 from plan_my_stay.messages.payloads import VerdictPayload
-from plan_my_stay.models import Address, Conflict, CostBasis, Leg, ProposalItem
+from plan_my_stay.models import Address, Conflict, CostBasis, Leg, ProposalItem, StayOption
 from plan_my_stay.ports import LLMPort
 from plan_my_stay.state import TripState
 
@@ -133,6 +134,63 @@ def _leg_line(leg: Leg, labels: Mapping[str, str]) -> str:
     return f"  {fmt_clock(leg.depart_at)}  Travel from {start} to {end}: {outcome}"
 
 
+def _upper_first(text: str) -> str:
+    """Capitalise the first letter only (`str.capitalize` would lowercase a gym's name)."""
+    return text[:1].upper() + text[1:]
+
+
+def _ranked_line(ranked: RankedStay, *, last: bool) -> str:
+    """One hotel of the ranking with the numbers it was ranked on. A clause is left out when that factor's agent gave
+    nothing for any hotel (it is then absent from `scores`)."""
+    walk = f"{DEFAULT_RADIUS_MINUTES:.0f}-minute walk"
+    clauses = [
+        "average commute unknown"
+        if ranked.average_commute_minutes is None
+        else f"average commute {ranked.average_commute_minutes:.1f} min"
+    ]
+    if "gym" in ranked.scores:
+        clauses.append(
+            f"nearest gym {fmt_distance(ranked.nearest_gym_m)} ({ranked.nearest_gym_name})"
+            if ranked.nearest_gym_m is not None
+            else "no gym found"
+        )
+    if "restaurants" in ranked.scores:
+        clauses.append(
+            f"{ranked.restaurant_count} restaurants within a {walk}, average rank {ranked.restaurant_average_rank:.1f}"
+            if ranked.restaurant_average_rank is not None
+            else f"no restaurants within a {walk}"
+        )
+    fees = " (fees not confirmed)" if ranked.cost_basis in CostBasis.FEES_UNKNOWN else ""
+    price = f"{fmt_money(ranked.total_price, ranked.currency)} total{fees}"
+    lead = "Strongest on" if last else "Ahead of the next option on"
+    ending = " Recommended: the plan below is built around it." if ranked.rank == 1 else ""
+    return (
+        f"  {ranked.rank}. {ranked.name or ranked.stay_id}: {price}. {_upper_first('; '.join(clauses))}. "
+        f"{lead} {ranked.deciding_factor}.{ending}"
+    )
+
+
+def _ranking_lines(state: TripState) -> list[str]:
+    """The top hotels, best first. Only the first has its days planned and checked."""
+    if not state.ranked_stays:
+        return []
+    count = len(state.ranked_stays)
+    lines = [
+        f"Top {count} stay{'s' if count != 1 else ''}: ranked on average commute to your meetings, distance to the "
+        f"nearest gym, and the restaurants within a {DEFAULT_RADIUS_MINUTES:.0f}-minute walk",
+        *(_ranked_line(r, last=i == count - 1) for i, r in enumerate(state.ranked_stays)),
+    ]
+    if count > 1:
+        lines.append("  Only option 1 is planned day by day and checked; the others are ranked and priced.")
+    return [*lines, ""]
+
+
+def _deciding_factor(state: TripState, stay: StayOption) -> str:
+    """What put the chosen hotel first: the Concierge's ranking when it ranked this hotel, else the Stay agent's label."""
+    best = state.ranked_stays[0] if state.ranked_stays else None
+    return best.deciding_factor if best is not None and best.stay_id == stay.stay_id else stay.deciding_factor
+
+
 def _stay_lines(state: TripState) -> list[str]:
     stay = state.stay
     if stay is None:
@@ -143,7 +201,7 @@ def _stay_lines(state: TripState) -> list[str]:
     return [
         f"  {stay.name or stay.stay_id} ({zone}): {fmt_money(stay.total_price, stay.currency)} total for {nights} nights",
         f"  Price basis: {basis}.",
-        f"  What decided it: {stay.deciding_factor}.",
+        f"  What decided it: {_deciding_factor(state, stay)}.",
     ]
 
 
@@ -182,6 +240,7 @@ def render_template(
         f"Budget: {fmt_money(state.budget.amount, state.budget.currency)} for the stay plus transport. "
         "Only the stay price counts against it for now; transport cost is not calculated.",
         "",
+        *_ranking_lines(state),
         "Stay",
         *_stay_lines(state),
         "",
