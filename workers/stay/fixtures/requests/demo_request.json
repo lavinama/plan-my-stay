@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0",
+  "type": "request",
+  "message_id": "44444444-4444-4444-4444-444444444444",
+  "reply_to": null,
+  "trip_id": "trip-nyc-demo",
+  "user_id": "demo-user-1",
+  "state_version": 1,
+  "from": "concierge",
+  "to": ["stay"],
+  "sent_at": "2026-11-14T16:00:00-05:00",
+  "summary": "Find 6 stays near meetings B and C, Tue 17 to Thu 19 Nov",
+  "payload": {
+    "city": "New York, NY",
+    "dates": {"check_in": "2026-11-17", "check_out": "2026-11-19"},
+    "guests": 1,
+    "anchors": [
+      {"id": "A", "lat": 40.7066, "lng": -74.0053, "start": "2026-11-17T11:00:00-05:00", "end": "2026-11-17T12:00:00-05:00", "counts_for_stay": false},
+      {"id": "B", "lat": 40.7502, "lng": -73.9987, "start": "2026-11-17T16:00:00-05:00", "end": "2026-11-17T17:00:00-05:00", "counts_for_stay": true},
+      {"id": "C", "lat": 40.7233, "lng": -73.9997, "start": "2026-11-18T10:00:00-05:00", "end": "2026-11-18T11:00:00-05:00", "counts_for_stay": true}
+    ],
+    "budget": {"currency": "USD", "amount": 1000},
+    "constraints": {},
+    "response_type": "stay_shortlist"
+  }
+}
