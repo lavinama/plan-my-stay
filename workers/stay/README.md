@@ -4,16 +4,26 @@ Built from `Rohan/stay-agent-spec.md` (Stay Agent Spec v4). This is the P0
 stub from the spec's own build order: "Stub `handle()` returns 6 fixture
 stays. BAND round trip." No Keenable call yet.
 
+Note: `Rohan/stay-agent-spec.md` is a local, untracked reference file in
+this working directory -- it is not committed to the repo, so it won't be
+there on a fresh clone. It's cited here as the context this worker was
+built against, not as a shared doc anyone else can currently open.
+
 ## Integration boundary
 
 Call `handle(message, *, discover=None) -> list[dict]`. `discover` defaults
 to `workers/stay/fixtures.discover_stays`, which returns 6 fixed, clearly
 fictional demo stays with zero network calls.
 
-Per D4 in the spec: Stay sends all 6 stays in **one `stay_shortlist`
-message to Restaurant, Gym and Concierge** — it does not pick a winner and
-does not re-rank on feedback. Restaurant and Gym report their own findings
-straight to the Concierge, which picks the final 3.
+Per D4 in the spec, Stay sends all 6 stays in one `stay_shortlist` message
+and does not pick a winner or re-rank on feedback. The spec's own text
+says that message goes to Restaurant, Gym and Concierge, but per the PR
+#9/#10 integration review, PR #10's current (still-draft) scope has the
+Concierge as the only seat Stay talks to, so **this worker currently sends
+`stay_shortlist` to Concierge only** (`to=["concierge"]`); the Concierge
+queries Gym and Restaurant itself rather than receiving the shortlist
+directly from Stay. If the team's plan changes, the recipients here
+change with it.
 
 ```python
 import json
@@ -32,7 +42,9 @@ for reply in handle(message):
 - **Ranking (FR8):** average driving minutes to the meetings that count
   toward the stay (`driving` per stay, keyed by meeting id) first, then
   price per night, then rating (descending) as tiebreakers. A stay with no
-  recorded driving time is ranked last, never assumed to be close.
+  recorded driving time is ranked last, never assumed to be close. This is
+  a driving-only P0 stand-in -- the full plan ranks by the fastest of
+  walking/transit/driving per meeting once Routing seat times arrive.
 - **Fewer than 6 after filtering:** sends what's left plus a `note` in the
   payload, per the spec's edge cases ("send what there is, with a note").
   Never sends nothing.
@@ -47,8 +59,15 @@ one-line import change.
 ## Not built yet (P1+, per the spec's own cut order)
 
 Hop 1 (Keenable discovery per meeting address), Hop 2 (Keenable detail +
-SIE extract, ground-checked against page text), the routing service call
-for real driving times, the listing-link lookup (D1), and the Cognee trace.
+SIE extract, ground-checked against page text), real driving/walking/
+transit times from Routing, the listing-link lookup (D1), and the Cognee
+trace.
+
+Note: Routing is a BAND seat, not an HTTP "routing service" -- once built,
+the Stay agent gets real commute times by sending it `route_request`
+messages over BAND (same pattern as any other inter-agent message in this
+repo), not by calling out to an external routing API directly.
+
 The spec's own cut order keeps "6 stays sent, driving times, the fixture
 fallback" even if everything else is cut — that's exactly what this stub
 provides.
