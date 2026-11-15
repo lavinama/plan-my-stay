@@ -1,0 +1,89 @@
+{
+  "note": "Fictional demo data for the Stay Agent Spec v4 stub (D15: 6 stays, about 3 near each meeting). Not real listings.",
+  "stays": [
+    {
+      "stay_id": "stay-chelsea-1",
+      "name": "The Chelsea Nine Hotel (fictional demo data)",
+      "source": "airbnb",
+      "link": "https://example-fictional.test/stays/chelsea-nine",
+      "address": {"street": "370 9th Ave", "city": "New York", "zip": "10001"},
+      "neighbourhood": "Chelsea",
+      "lat": 40.7513, "lng": -73.9972,
+      "total_price": 480, "currency": "USD", "price_per_night": 240, "nights": 2,
+      "room_type": "entire apartment", "rating": 4.6, "reviews": 212,
+      "amenities": ["wifi", "kitchen"], "cancellation": "free until 48h before check-in",
+      "driving": {"B": {"distance_km": 0.2, "minutes": 2}, "C": {"distance_km": 4.1, "minutes": 14}},
+      "source_url": "https://example-fictional.test/stays/chelsea-nine", "fetched_at": "2026-11-14T16:40:00-05:00"
+    },
+    {
+      "stay_id": "stay-chelsea-2",
+      "name": "Penn Station Suites (fictional demo data)",
+      "source": "airbnb",
+      "link": "https://example-fictional.test/stays/penn-station-suites",
+      "address": {"street": "250 W 23rd St", "city": "New York", "zip": "10011"},
+      "neighbourhood": "Chelsea",
+      "lat": 40.7449, "lng": -73.9960,
+      "total_price": 410, "currency": "USD", "price_per_night": 205, "nights": 2,
+      "room_type": "private room", "rating": 4.3, "reviews": 98,
+      "amenities": ["wifi"], "cancellation": "non-refundable",
+      "driving": {"B": {"distance_km": 0.6, "minutes": 4}, "C": {"distance_km": 3.6, "minutes": 12}},
+      "source_url": "https://example-fictional.test/stays/penn-station-suites", "fetched_at": "2026-11-14T16:41:00-05:00"
+    },
+    {
+      "stay_id": "stay-chelsea-3",
+      "name": "9th Avenue Loft (fictional demo data)",
+      "source": "booking.com",
+      "link": null,
+      "address": {"street": "95 9th Ave", "city": "New York", "zip": "10011"},
+      "neighbourhood": "Chelsea",
+      "lat": 40.7440, "lng": -74.0003,
+      "total_price": 530, "currency": "USD", "price_per_night": 265, "nights": 2,
+      "room_type": "entire apartment", "rating": 4.1, "reviews": 54,
+      "amenities": ["wifi", "kitchen", "workspace"], "cancellation": "unknown",
+      "driving": {"B": {"distance_km": 0.9, "minutes": 5}, "C": {"distance_km": 4.3, "minutes": 15}},
+      "source_url": "https://example-fictional.test/stays/9th-ave-loft", "fetched_at": "2026-11-14T16:42:00-05:00"
+    },
+    {
+      "stay_id": "stay-soho-1",
+      "name": "Broome Street Residence (fictional demo data)",
+      "source": "airbnb",
+      "link": "https://example-fictional.test/stays/broome-street-residence",
+      "address": {"street": "400 Broome St", "city": "New York", "zip": "10013"},
+      "neighbourhood": "SoHo",
+      "lat": 40.7215, "lng": -74.0021,
+      "total_price": 560, "currency": "USD", "price_per_night": 280, "nights": 2,
+      "room_type": "entire apartment", "rating": 4.7, "reviews": 301,
+      "amenities": ["wifi", "kitchen"], "cancellation": "free until 48h before check-in",
+      "driving": {"B": {"distance_km": 4.0, "minutes": 13}, "C": {"distance_km": 0.3, "minutes": 3}},
+      "source_url": "https://example-fictional.test/stays/broome-street-residence", "fetched_at": "2026-11-14T16:43:00-05:00"
+    },
+    {
+      "stay_id": "stay-soho-2",
+      "name": "Broadway Loft SoHo (fictional demo data)",
+      "source": "airbnb",
+      "link": "https://example-fictional.test/stays/broadway-loft-soho",
+      "address": {"street": "515 Broadway", "city": "New York", "zip": "10012"},
+      "neighbourhood": "SoHo",
+      "lat": 40.7236, "lng": -73.9999,
+      "total_price": 600, "currency": "USD", "price_per_night": 300, "nights": 2,
+      "room_type": "entire apartment", "rating": 4.5, "reviews": 176,
+      "amenities": ["wifi", "workspace"], "cancellation": "non-refundable",
+      "driving": {"B": {"distance_km": 3.8, "minutes": 12}, "C": {"distance_km": 0.2, "minutes": 2}},
+      "source_url": "https://example-fictional.test/stays/broadway-loft-soho", "fetched_at": "2026-11-14T16:44:00-05:00"
+    },
+    {
+      "stay_id": "stay-soho-3",
+      "name": "Mulberry Street Stay (fictional demo data)",
+      "source": "booking.com",
+      "link": null,
+      "address": {"street": "210 Mulberry St", "city": "New York", "zip": "10012"},
+      "neighbourhood": "NoLita",
+      "lat": 40.7230, "lng": -73.9956,
+      "total_price": 470, "currency": "USD", "price_per_night": 235, "nights": 2,
+      "room_type": "private room", "rating": 4.0, "reviews": 41,
+      "amenities": ["wifi"], "cancellation": "unknown",
+      "driving": {"B": {"distance_km": 4.2, "minutes": 14}, "C": {"distance_km": 0.5, "minutes": 4}},
+      "source_url": "https://example-fictional.test/stays/mulberry-street-stay", "fetched_at": "2026-11-14T16:45:00-05:00"
+    }
+  ]
+}
