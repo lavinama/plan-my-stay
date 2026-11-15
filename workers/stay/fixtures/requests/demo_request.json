@@ -14,13 +14,23 @@
     "city": "New York, NY",
     "dates": {"check_in": "2026-11-17", "check_out": "2026-11-19"},
     "guests": 1,
-    "anchors": [
-      {"id": "A", "lat": 40.7066, "lng": -74.0053, "start": "2026-11-17T11:00:00-05:00", "end": "2026-11-17T12:00:00-05:00", "counts_for_stay": false},
-      {"id": "B", "lat": 40.7502, "lng": -73.9987, "start": "2026-11-17T16:00:00-05:00", "end": "2026-11-17T17:00:00-05:00", "counts_for_stay": true},
-      {"id": "C", "lat": 40.7233, "lng": -73.9997, "start": "2026-11-18T10:00:00-05:00", "end": "2026-11-18T11:00:00-05:00", "counts_for_stay": true}
+    "anchors": [],
+    "meetings": [
+      {"id": "A", "address": "199 Water St, New York, NY 10038", "start": "2026-11-17T11:00:00-05:00", "end": "2026-11-17T12:00:00-05:00", "counts_for_stay": false},
+      {"id": "B", "address": "368 9th Ave, New York, NY 10001", "start": "2026-11-17T16:00:00-05:00", "end": "2026-11-17T17:00:00-05:00", "counts_for_stay": true},
+      {"id": "C", "address": "524 Broadway, New York, NY 10012", "start": "2026-11-18T10:00:00-05:00", "end": "2026-11-18T11:00:00-05:00", "counts_for_stay": true}
     ],
-    "budget": {"currency": "USD", "amount": 1000},
-    "constraints": {},
+    "zones": [],
+    "slots": [],
+    "profile": {
+      "diet": [], "cuisines": [], "gym_types": [], "workout_times": [],
+      "stay_preferences": ["quiet street", "private bathroom"],
+      "price_comfort": null, "transport_mode": null
+    },
+    "budget": {"currency": "USD", "amount": 1000.0},
+    "constraints": {"max_walk_minutes": 15},
+    "roster": ["stay"],
+    "round": 0,
     "response_type": "stay_shortlist"
   }
 }
