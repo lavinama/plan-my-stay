@@ -60,6 +60,10 @@ reader, it should wait for it (or build against a stub with the same
 interface) rather than writing its own Keenable/SIE integration that
 gets thrown away once the shared reader lands.
 
+**Answer (14 Nov review):** Rohan's reader has to land early since his data
+path is the riskiest. Until it does, Jwalin and Prathik use Keenable's fetch
+with a prompt as a stand-in (per `docs/PLAN.md`'s "Who builds what").
+
 ## 5. Which SIE model *and which operation type*, and does it fit the demo's time budget?
 
 `docs/PLAN.md`'s test flagged `fastino/gliner2-large-v1` (an
@@ -93,6 +97,8 @@ itself doesn't look like the right fit.
 82s/call does not fit a 3-minute live demo regardless of which model is
 "correct" — worth settling on the plan's tested Qwen models (or
 confirming a faster path) before any worker wires this in for real.
+
+**Still open as of 14 Nov review** — not yet answered.
 
 ## 6. Who wires BAND — one coordinator or four?
 
@@ -134,6 +140,9 @@ exposed in this repo already).
 
 **Why it matters:** before any agent's Cognee calls are wired for real,
 confirm the dataset is addressed by UUID everywhere, not by name.
+
+**Still open as of 14 Nov review** — the account is confirmed shared, but
+no dataset UUID has been handed out yet.
 
 ## 8. What does "near the stay" anchor on before a real stay pick exists?
 
