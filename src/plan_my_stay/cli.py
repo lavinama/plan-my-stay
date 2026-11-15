@@ -26,6 +26,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("seat", choices=[s.value for s in Seat])
     parser.add_argument("--offline", action="store_true", help="fixtures and in-memory fakes instead of Google, Cognee and the LLM (no keys)")
     parser.add_argument("--stubs", action="store_true", help="run the stand-in for a specialist (stay, restaurant, gym) even if a live agent exists")
+    parser.add_argument("--full", action="store_true", help="the Concierge also talks to Routing, the Verifier, Gym and Restaurant (default: only the Stay agent)")
     parser.add_argument("--config", default=None, help="BAND agent_config.yaml (default: BAND_CONFIG_PATH or agent_config.yaml)")
     parser.add_argument("--seats-file", default="band_seats.yaml", help="seat -> BAND display name (not secret)")
     return parser
@@ -68,7 +69,7 @@ def run_seat_command(
         return 2
 
     try:
-        handler = build_seat(seat, settings, offline=args.offline, use_stubs=args.stubs)
+        handler = build_seat(seat, settings, offline=args.offline, use_stubs=args.stubs, full=args.full)
     except MissingSecretError as exc:
         print(exc, file=sys.stderr)
         return 1

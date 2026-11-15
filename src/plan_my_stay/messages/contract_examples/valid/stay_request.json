@@ -1,0 +1,116 @@
+{
+  "schema_version": "1.0",
+  "type": "request",
+  "message_id": "00000000-0000-4000-8000-000000000017",
+  "reply_to": null,
+  "trip_id": "7c3f1d2e-5a4b-4e8a-9b6d-2f1c0a8e4b73",
+  "user_id": "demo-user-1",
+  "state_version": 2,
+  "from": "concierge",
+  "to": [
+    "stay"
+  ],
+  "sent_at": "2026-11-14T16:05:00-05:00",
+  "summary": "Find stays in New York, NY, Tue 17 Nov to Thu 19 Nov within $1,000.00",
+  "payload": {
+    "city": "New York, NY",
+    "dates": {
+      "check_in": "2026-11-17",
+      "check_out": "2026-11-19"
+    },
+    "guests": 1,
+    "anchors": [],
+    "meetings": [
+      {
+        "id": "A",
+        "address": "199 Water St, New York, NY 10038",
+        "start": "2026-11-17T11:00:00-05:00",
+        "end": "2026-11-17T12:00:00-05:00",
+        "counts_for_stay": false
+      },
+      {
+        "id": "B",
+        "address": "368 9th Ave, New York, NY 10001",
+        "start": "2026-11-17T16:00:00-05:00",
+        "end": "2026-11-17T17:00:00-05:00",
+        "counts_for_stay": true
+      },
+      {
+        "id": "C",
+        "address": "524 Broadway, New York, NY 10012",
+        "start": "2026-11-18T10:00:00-05:00",
+        "end": "2026-11-18T11:00:00-05:00",
+        "counts_for_stay": true
+      }
+    ],
+    "zones": [
+      {
+        "id": "z1",
+        "name": "Chelsea",
+        "bounds": {
+          "ne": {
+            "lat": 40.756,
+            "lng": -73.99
+          },
+          "sw": {
+            "lat": 40.738,
+            "lng": -74.01
+          }
+        }
+      },
+      {
+        "id": "z2",
+        "name": "TriBeCa",
+        "bounds": {
+          "ne": {
+            "lat": 40.7262,
+            "lng": -73.9985
+          },
+          "sw": {
+            "lat": 40.7125,
+            "lng": -74.0125
+          }
+        }
+      },
+      {
+        "id": "z3",
+        "name": "Financial District",
+        "bounds": {
+          "ne": {
+            "lat": 40.716,
+            "lng": -73.9985
+          },
+          "sw": {
+            "lat": 40.701,
+            "lng": -74.02
+          }
+        }
+      }
+    ],
+    "slots": [],
+    "profile": {
+      "diet": [],
+      "cuisines": [],
+      "gym_types": [],
+      "workout_times": [],
+      "stay_preferences": [
+        "quiet street",
+        "private bathroom"
+      ],
+      "price_comfort": null,
+      "transport_mode": null
+    },
+    "constraints": {
+      "max_walk_minutes": 15
+    },
+    "budget": {
+      "currency": "USD",
+      "amount": 1000.0
+    },
+    "roster": [
+      "stay"
+    ],
+    "round": 0,
+    "response_type": "stay_shortlist"
+  }
+}

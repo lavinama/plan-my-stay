@@ -14,9 +14,9 @@ from plan_my_stay.rehearsal.room import Room
 from plan_my_stay.rehearsal.wiring import build_rehearsal_seats
 
 
-def _run(memory: InMemoryMemory | None = None, *, text: str = "Plan my demo trip", **seat_options):
+def _run(memory: InMemoryMemory | None = None, *, text: str = "Plan my demo trip", stay_only: bool = False, **seat_options):
     memory = memory if memory is not None else InMemoryMemory()
-    room = Room(build_rehearsal_seats(memory, **seat_options))
+    room = Room(build_rehearsal_seats(memory, stay_only=stay_only, **seat_options))
     room.say("Mario", text)
     return room, memory
 
@@ -133,7 +133,7 @@ def test_a_teammates_real_agent_can_replace_a_stub_in_the_same_rehearsal():
             return []
 
     gym = QuietGym()
-    seats = build_rehearsal_seats(InMemoryMemory(), overrides={Seat.GYM: gym})
+    seats = build_rehearsal_seats(InMemoryMemory(), stay_only=False, overrides={Seat.GYM: gym})
 
     assert seats[Seat.GYM] is gym
     assert set(seats) == set(Seat)

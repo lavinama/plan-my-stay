@@ -21,7 +21,7 @@ from plan_my_stay.messages.payloads import (
     RequestPayload,
     RouteRequestPayload,
 )
-from plan_my_stay.models import Budget, Dates, Place
+from plan_my_stay.models import Budget, Dates, Meeting, Place
 from plan_my_stay.state import TripState
 
 MAX_WALK_MINUTES = 15  # the plan's example constraint: restaurants and gyms within a short walk
@@ -56,14 +56,17 @@ def specialist_request(
     budget: Budget | None = None,
     reply_to: str | None = None,
     note: str = "",
+    meetings: Sequence[Meeting] = (),
 ) -> Message:
-    """A `request` to Stay, Restaurant or Gym. Only Stay gets the budget (and answers with a shortlist)."""
+    """A `request` to Stay, Restaurant or Gym. Only Stay gets the budget (and answers with a shortlist). `meetings`
+    are the addresses and times for a Stay agent that finds the coordinates itself (no anchors then)."""
     is_stay = seat is Seat.STAY
     payload = RequestPayload(
         city=state.city,
         dates=Dates(check_in=state.check_in, check_out=state.check_out),
         guests=state.guests,
         anchors=state.anchors,
+        meetings=tuple(meetings),
         zones=state.zones,
         slots=slots_for(seat, state.slots),
         profile=profile_for(seat, state.profile),

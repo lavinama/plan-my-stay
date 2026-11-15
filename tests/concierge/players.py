@@ -328,6 +328,8 @@ class Flow:
 
 
 def make_seat(memory=None, llm=None, **kwargs) -> ConciergeSeat:
+    """A Concierge on the full pipeline (Routing, Verifier, Gym, Restaurant) unless a test asks for `stay_only=True`."""
+    kwargs.setdefault("stay_only", False)
     return ConciergeSeat(memory if memory is not None else FakeMemory(), llm, **kwargs)
 
 

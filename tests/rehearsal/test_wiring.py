@@ -17,8 +17,15 @@ class RecordingSeat:
         return []
 
 
-def test_the_default_cast_is_all_six_seats_with_stand_ins_for_the_specialists():
+def test_the_default_cast_is_the_concierge_and_the_stay_agent():
     seats = build_rehearsal_seats()
+
+    assert set(seats) == {Seat.CONCIERGE, Seat.STAY}
+    assert isinstance(seats[Seat.STAY], StayStub)
+
+
+def test_the_full_pipeline_cast_is_all_six_seats_with_stand_ins_for_the_specialists():
+    seats = build_rehearsal_seats(stay_only=False)
 
     assert set(seats) == set(Seat)
     assert isinstance(seats[Seat.STAY], StayStub)
@@ -29,15 +36,24 @@ def test_the_default_cast_is_all_six_seats_with_stand_ins_for_the_specialists():
 def test_overrides_swap_exactly_the_named_seats():
     mine = RecordingSeat()
 
-    seats = build_rehearsal_seats(overrides={Seat.GYM: mine})
+    seats = build_rehearsal_seats(stay_only=False, overrides={Seat.GYM: mine})
 
     assert seats[Seat.GYM] is mine
     assert isinstance(seats[Seat.STAY], StayStub) and isinstance(seats[Seat.RESTAURANT], RestaurantStub)
 
 
-def test_an_overridden_seat_is_the_one_the_concierge_talks_to():
+def test_an_overridden_stay_agent_is_the_one_the_concierge_asks():
     mine = RecordingSeat()
-    room = Room(build_rehearsal_seats(overrides={Seat.GYM: mine}))
+    room = Room(build_rehearsal_seats(overrides={Seat.STAY: mine}))
+
+    room.say("Mario", "Plan my demo trip")
+
+    assert [m.type for m in mine.received] == [MessageType.REQUEST]
+
+
+def test_an_overridden_gym_agent_is_asked_in_the_full_pipeline():
+    mine = RecordingSeat()
+    room = Room(build_rehearsal_seats(stay_only=False, overrides={Seat.GYM: mine}))
 
     room.say("Mario", "Plan my demo trip")
 

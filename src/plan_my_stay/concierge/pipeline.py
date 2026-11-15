@@ -17,7 +17,12 @@ from plan_my_stay.concierge.assemble import (
 )
 from plan_my_stay.concierge.fmt import fmt_money
 from plan_my_stay.concierge.gate import GateResult, gate_stay
-from plan_my_stay.concierge.gating import ask_cheaper, settle_close_call, skipped_notes, widen_and_ask
+from plan_my_stay.concierge.gating import (
+    ask_cheaper,
+    settle_close_call,
+    skipped_notes,
+    widen_and_ask,
+)
 from plan_my_stay.concierge.hotels import hotel_points
 from plan_my_stay.concierge.itinerary import labels_for, render_itinerary
 from plan_my_stay.concierge.legs import leg_gaps, locate_stay, plan_legs
@@ -28,6 +33,7 @@ from plan_my_stay.concierge.outbox import (
     specialist_request,
     verifier_proposal,
 )
+from plan_my_stay.concierge.ranking import TOP_N, Weights, keep_stay_order, rank_hotels
 from plan_my_stay.concierge.run import (
     MAX_ROUNDS,
     PendingLeg,
@@ -38,8 +44,8 @@ from plan_my_stay.concierge.run import (
     put,
     reply,
 )
-from plan_my_stay.concierge.ranking import TOP_N, Weights, rank_hotels
 from plan_my_stay.concierge.safe_memory import SafeMemory
+from plan_my_stay.concierge.top_stays import render_top_stays
 from plan_my_stay.concierge.transport import build_leg
 from plan_my_stay.concierge.zones import ZoneProvider
 from plan_my_stay.enums import Seat, VerdictStatus
@@ -78,6 +84,7 @@ class Pipeline:
         zones: ZoneProvider,
         check_in_time: dt.time,
         weights: Weights = Weights(),
+        stay_only: bool = False,
     ) -> None:
         self._memory = memory
         self._llm = llm
@@ -85,6 +92,7 @@ class Pipeline:
         self._zones = zones
         self._check_in_time = check_in_time
         self._weights = weights
+        self._stay_only = stay_only  # the Stay agent is the only seat the Concierge talks to
 
     # --- small helpers ---------------------------------------------------------------------
 
@@ -206,10 +214,37 @@ class Pipeline:
         gate = gate_stay(shortlist, run.trip.budget, self._reserve)
         if not gate.fits:
             return self._nothing_fits(run)
+        if self._stay_only:
+            return self._rank_and_deliver(run, gate)
         run, queries = self._ask_for_fits(run, gate.fitting)
         if queries or self._awaiting_fits(run):
             return run.with_(phase=Phase.RANKING), list(queries)
         return self._rank_and_route(run, gate)
+
+    # --- stay only: the Stay agent's order is the ranking ----------------------------------
+
+    def _rank_and_deliver(self, run: Run, gate: GateResult) -> Result:
+        """Keep the Stay agent's order for the hotels the budget leaves, show the first three, and finish."""
+        counting = [m.id for m in run.meetings if m.counts_for_stay]
+        ranked = keep_stay_order(gate.fitting, anchor_ids=counting, top_n=TOP_N)
+        chosen = next(s for s in gate.fitting if s.stay_id == ranked[0].stay_id)
+        shortlist = run.shortlist.stays if run.shortlist is not None else ()
+        state = run.trip.bump(stay=chosen, stay_shortlist=shortlist, ranked_stays=ranked)
+        text = render_top_stays(
+            state,
+            run.meetings,
+            notes=skipped_notes(run.trip, gate, reserve=self._reserve),
+            warnings=run.warnings,
+            reserve=self._reserve,
+        )
+        self._memory.save_trip_state(state)
+        self._memory.log_trace(
+            trip_id=run.trip_id,
+            user_id=run.user_id,
+            step="ranked_stays",
+            outcome="top " + ", ".join(f"{r.rank}. {r.stay_id} ({r.average_commute_minutes} min)" for r in ranked),
+        )
+        return run.with_(state=state, phase=Phase.DELIVERED), [reply(run, text)]
 
     # --- ranking: what the Gym and Restaurant agents say about each hotel -------------------
 

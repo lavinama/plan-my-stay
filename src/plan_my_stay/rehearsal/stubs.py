@@ -129,6 +129,9 @@ class StayStub:
             peers = [*_in_roster(request, Seat.RESTAURANT, Seat.GYM), Seat.CONCIERGE]
             out.append(_reply(message, MessageType.STAY_PICK, Seat.STAY, peers, f"Stay pick: {top.name}",
                               StayPickPayload(stay_id=top.stay_id, zone_id=top.zone_id, commute_minutes=top.commute_minutes)))
+        if request.round == 0:  # learned once per trip, so run 2 has something to start from
+            out.append(_reply(message, MessageType.PREFERENCE_LEARNED, Seat.STAY, [Seat.CONCIERGE], "Learned: the user wants a quiet street",
+                              PreferenceLearnedPayload(key="stay_noise", value="quiet", evidence="Set aside a listing on a busy avenue")))
         return out
 
 

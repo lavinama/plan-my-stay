@@ -5,7 +5,7 @@ together. `docs/PLAN.md` is the plan; this file settles the details the plan lea
 seats can be built in parallel and still connect. Where this file adds something the plan does
 not say, it is marked **New** and listed in "Decisions to confirm with the team" at the end.
 
-> **Plan change, not yet in the code (14 Nov):** `docs/PLAN.md` now has the Concierge speaking only with the Stay agent. The Restaurant agent and `restaurant_fit` are out, and the Gym agent (with `hotel_query`, `gym_fit`, `stay_pick` and `workout_slot`) is deferred, so hotels are ranked by average commute alone. This file describes the code as built, which still has the Restaurant and Gym seats, `restaurant_fit`, `zone_fit`, `hotel_query`, `gym_fit` and the three-factor ranking of section 5a. Changing the code means removing them and leaving the Concierge to pass the Stay agent's commute order through, with the Verifier's block moving from a restaurant's hours to a stay's travel time.
+> **Scope for now (14 Nov): the Concierge speaks only with the Stay agent.** That is the default in the code (`ConciergeSeat(stay_only=True)`, `run_seat.py concierge`) and it is described in section 5b. Sections 1 to 5a describe the **full pipeline** (Routing, the Verifier, Gym and Restaurant, a three-factor ranking), which is still in the code behind `--full`. `docs/PLAN.md` keeps the Gym agent and the Verifier gate as deferred extensions and drops the Restaurant agent.
 
 ## 1. The handler contract
 
@@ -168,6 +168,38 @@ planned day by day and checked by the Verifier (the others are ranked and priced
   and the plan warns that counts reward dense, noisy neighbourhoods. Raise `count` into the score if that
   shows up in real runs.
 
+## 5b. The Concierge's run with only the Stay agent (the default)
+
+As built: `ConciergeSeat(stay_only=True)`. Use `--full` (or `stay_only=False`) for sections 5 and 5a.
+
+1. A person writes to the Concierge; `handle_text` parses the trip as in step 1 of section 5.
+2. **No geocoding, no Routing.** The Concierge builds a `Meeting` for each meeting (`id`, `address`, `start`, `end`,
+   `counts_for_stay`, false when the meeting starts before check-in) and a trip state with no anchors and a roster of
+   the Stay seat. A `Meeting` has no title and no attendees: extra fields are dropped when a message is parsed.
+3. It sends **one** `request` to Stay: the meetings (no anchors), the budget, the zones (the demo's for New York,
+   none for another city: Stay picks), the stay preferences, the roster and `response_type="stay_shortlist"`. It saves
+   a copy of the trip state to memory with no meeting address in it.
+4. Stay finds the meetings' coordinates and travel times itself (through Routing or Google Maps directly: Rohan decides) and
+   answers `stay_shortlist`, ranked by average commute. It may also send `stay_pick` and `preference_learned`.
+5. The Concierge keeps the stays that fit the budget once the fee reserve is added. If none does it asks Stay for
+   cheaper options (`round` 1: the budget divided by one plus the reserve; `round` 2: also a wider zone), then widens
+   the budget by a quarter, says so on screen and flags it in the reply. If that fails too, it tells the person.
+6. **It keeps the Stay agent's order** (`keep_stay_order`: no re-sorting, no arbitration), takes the first three and
+   replies with `render_top_stays`: price (with the fee reserve where fees are unconfirmed), average commute, the
+   meetings that counted and the one that did not, which is recommended, and a line saying this is a stays-only
+   answer. The run ends there.
+7. A preference Stay learns is written to memory (the Concierge is the only writer); a later comment from the person
+   is stored as accept or reject feedback, as in section 5.
+
+**Not in this mode:** Routing (nothing is geocoded and no leg is asked for), the Verifier (no merged plan, verdict
+or `plan_hash`), the Gym and Restaurant seats, a day-by-day itinerary, and every frontier-model call except parsing a
+trip that is not the demo trip. Messages for those seats are ignored if they arrive.
+
+**What the Stay agent must do for this Concierge:** read `payload.meetings` (never `anchors`), return the shortlist
+with `commute_minutes` keyed by meeting id and `average_commute_minutes` on each stay, rank 1..n by that average
+(ties to the cheaper stay), and never return a stay priced above `payload.budget`. The example is
+`contract_examples/valid/stay_request.json`.
+
 ## 6. The `band_adapter`
 
 Built against band-sdk 9.2.1 by reading its source (nothing has run against live BAND).
@@ -223,7 +255,10 @@ forge another entry; per-user privacy rests on the `user=` label, which every re
 2. **Geocode-only Routing lookup** (`modes=[]`) so the Concierge can turn addresses into anchors.
 3. **Static zones per city for v1.** The plan's grid scoring by Routing is not built.
 4. **Fee reserve default 15%** (`FEE_RESERVE_PCT`), a placeholder the plan leaves to Mario and Rohan.
-5. **The Concierge ranks hotels** (section 5a), reversing the plan's "it does not rank stays". Three new message
+7. **Stay only is the default.** The Concierge speaks only with the Stay agent (section 5b); Routing and the Verifier are
+   out of its conversation, so there is no day-by-day itinerary or Verifier gate until they return.
+8. **The Stay agent receives meeting addresses and times** (never titles or attendees), because it finds the commute itself.
+5. **The Concierge ranks hotels** (section 5a), in the full pipeline; reversing the plan's "it does not rank stays". Three new message
    types, weights 0.5/0.25/0.25, a 10-minute straight-line walk, and a top three of which only #1 is verified.
 6. **Routing lookups are one message each.** If the first live round trip is slow, batch
    origins and destinations in one `route_request`.

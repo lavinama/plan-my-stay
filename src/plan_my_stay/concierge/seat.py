@@ -13,15 +13,16 @@ import uuid
 from collections.abc import Callable, Sequence
 
 from plan_my_stay import demo
+from plan_my_stay.concierge.assemble import build_meetings, build_state
 from plan_my_stay.concierge.fmt import fmt_day, fmt_money
-from plan_my_stay.concierge.intake import fell_back, parse_trip_request
-from plan_my_stay.concierge.outbox import geocode_request
+from plan_my_stay.concierge.intake import TripIntake, fell_back, parse_trip_request
+from plan_my_stay.concierge.outbox import geocode_request, specialist_request
 from plan_my_stay.concierge.pipeline import Pipeline, Result
 from plan_my_stay.concierge.ranking import Weights
 from plan_my_stay.concierge.run import Phase, Run
 from plan_my_stay.concierge.safe_memory import SafeMemory
 from plan_my_stay.concierge.zones import StaticZones, ZoneProvider
-from plan_my_stay.enums import MessageType
+from plan_my_stay.enums import MessageType, Seat
 from plan_my_stay.messages import Message
 from plan_my_stay.models import Profile
 from plan_my_stay.ports import LLMPort, MemoryPort
@@ -65,18 +66,23 @@ class ConciergeSeat:
         zones: ZoneProvider | None = None,
         check_in_time: str = "15:00",
         weights: Weights | None = None,
+        stay_only: bool = True,
     ) -> None:
         if fee_reserve_pct < 0:
             raise ValueError("fee_reserve_pct must not be negative")
         self._memory = SafeMemory(memory)
         self._llm = llm
+        self._stay_only = stay_only  # talk only to the Stay agent; `False` is the full pipeline
+        self._zones = zones or StaticZones()
+        self._check_in_time = dt.time.fromisoformat(check_in_time)
         self._pipeline = Pipeline(
             self._memory,
             llm,
             fee_reserve_pct=fee_reserve_pct,
-            zones=zones or StaticZones(),
-            check_in_time=dt.time.fromisoformat(check_in_time),
+            zones=self._zones,
+            check_in_time=self._check_in_time,
             weights=weights or Weights(),
+            stay_only=stay_only,
         )
         self._runs: dict[str, Run] = {}  # by trip_id; each value is replaced, never mutated
         self._latest: dict[str, str] = {}  # person -> their latest trip_id
@@ -120,6 +126,8 @@ class ConciergeSeat:
         profile = self._memory.load_profile(sender)
         if intake.is_demo and profile == Profile():
             profile = demo.demo_profile()  # a new user trying the demo gets the demo traveler's preferences
+        if self._stay_only:
+            return self._start_stay_only(sender, text, intake, trip_id, profile)
         lookups = [geocode_request(trip_id=trip_id, user_id=sender, meeting=meeting) for meeting in intake.meetings]
         run = Run(
             trip_id=trip_id,
@@ -145,6 +153,39 @@ class ConciergeSeat:
             f"budget {fmt_money(intake.budget.amount, intake.budget.currency)}. First I am locating your {meetings}."
         )
         return [TextReply(text=planning, mentions=(sender,)), *lookups]
+
+    def _start_stay_only(self, sender: str, text: str, intake: TripIntake, trip_id: str, profile: Profile) -> list[Outgoing]:
+        """The Stay agent is the only seat: send it the meetings (address and time) and the budget in one request.
+        No geocoding and no Routing: Stay finds the coordinates itself. The state copy holds no meeting address."""
+        meetings = build_meetings(intake, self._check_in_time)
+        state = build_state(
+            trip_id=trip_id, user_id=sender, intake=intake, anchors=(), profile=profile, zones=self._zones, roster=(Seat.STAY,)
+        )
+        request = specialist_request(state, Seat.STAY, meetings=meetings)
+        self._runs[trip_id] = Run(
+            trip_id=trip_id,
+            user_id=sender,
+            person=sender,
+            intake=intake,
+            profile=profile,
+            phase=Phase.REQUESTED,
+            state=state,
+            meetings=meetings,
+            requests={Seat.STAY: request},
+        )
+        self._latest[sender] = trip_id
+        self._memory.save_trip_state(state)
+        opening = (
+            "I could not read that as a trip request, so I am planning the New York demo trip instead. "
+            if fell_back(text, intake)
+            else ""
+        )
+        planning = (
+            f"{opening}Planning your trip to {intake.city}, {fmt_day(intake.check_in)} to {fmt_day(intake.check_out)}, "
+            f"budget {fmt_money(intake.budget.amount, intake.budget.currency)}. I am asking the Stay agent for the best "
+            "stays by commute to your meetings."
+        )
+        return [TextReply(text=planning, mentions=(sender,)), request]
 
     def _feedback(self, run: Run, text: str) -> list[Outgoing]:
         """After delivery: an accept or reject goes to memory as plain text with its reason."""

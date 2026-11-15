@@ -21,7 +21,7 @@ from plan_my_stay.messages.payloads import (
     VerdictPayload,
     WorkoutSlotPayload,
 )
-from plan_my_stay.models import LatLng, Leg, Profile
+from plan_my_stay.models import LatLng, Leg, Meeting, Profile
 from plan_my_stay.seat import Outgoing, TextReply
 from plan_my_stay.state import TripState
 
@@ -59,6 +59,7 @@ class Run:
     phase: Phase = Phase.GEOCODING
     pending_geocodes: Mapping[str, str] = field(default_factory=dict)  # route_request message_id -> meeting id
     geocoded: Mapping[str, LatLng] = field(default_factory=dict)  # meeting id -> coordinates
+    meetings: tuple[Meeting, ...] = field(default=(), repr=False)  # stay-only: sent to Stay; addresses stay out of the state
     state: TripState | None = None  # built once every meeting is located
     shortlist: StayShortlistPayload | None = None  # None while a (cheaper) answer is awaited
     shortlist_id: str | None = None  # the message that carried it, for `reply_to`

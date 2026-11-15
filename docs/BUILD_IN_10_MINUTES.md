@@ -5,7 +5,7 @@ number: **building Mario's half of the plan here took about 45 minutes, not 10.*
 went and a plan the measurements support. The repo now removes the two biggest costs, so the plan is
 reachable the next time, and for the three teammates' agents that are still to build.
 
-> **Plan change (14 Nov):** the Restaurant agent is out and the Gym agent is deferred (`docs/PLAN.md`), so the Restaurant and Gym lanes, and the lane brief below, no longer apply for now: only the Stay agent is left to build. The measured build times describe the code as built, which still has those seats.
+> **Scope for now (14 Nov):** the Concierge speaks only with the Stay agent (`docs/PLAN.md`), so the Restaurant, Gym, Routing and Verifier lanes, and the lane brief below, no longer apply for now: only the Stay agent is left to build, and the code does this by default. The measured build times describe the original build, whose full pipeline is still in the code behind `--full`.
 
 ## What "10 minutes" can cover
 

@@ -22,6 +22,7 @@ from plan_my_stay.models import (
     Identifier,
     Latitude,
     Longitude,
+    Meeting,
     Minutes,
     Place,
     Profile,
@@ -48,7 +49,8 @@ class RequestPayload(Frozen):
     city: str
     dates: Dates
     guests: int = Field(default=1, ge=1)
-    anchors: tuple[Anchor, ...]
+    anchors: tuple[Anchor, ...] = ()  # the meetings with coordinates, when the Concierge geocoded them
+    meetings: tuple[Meeting, ...] = ()  # the meetings with addresses, when the receiver finds the coordinates
     zones: tuple[Zone, ...] = ()
     slots: tuple[Slot, ...] = ()
     profile: Profile = Profile()
@@ -57,6 +59,12 @@ class RequestPayload(Frozen):
     roster: tuple[Seat, ...] = ()
     round: int = Field(default=0, ge=0, le=2)
     response_type: Literal["proposal", "stay_shortlist"] = "proposal"
+
+    @model_validator(mode="after")
+    def _has_meetings(self) -> "RequestPayload":
+        if not self.anchors and not self.meetings:
+            raise ValueError("a request needs the meetings, as anchors or as meetings")
+        return self
 
 
 class ProposalPayload(Frozen):

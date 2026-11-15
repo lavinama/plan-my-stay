@@ -39,6 +39,7 @@
           "counts_for_stay": true
         }
       ],
+      "meetings": [],
       "zones": [
         {
           "id": "z1",

@@ -21,8 +21,10 @@ class Recorder:
 
     def __init__(self):
         self.calls = []
+        self.seats = []
 
     async def __call__(self, seat_name, seat, *, config_path, directory, **kwargs):
+        self.seats.append(seat)
         self.calls.append((seat_name, type(seat).__name__, str(config_path), directory.name_of(Seat(seat_name))))
 
 
@@ -31,8 +33,8 @@ def files(tmp_path):
     seats = tmp_path / "band_seats.yaml"
     seats.write_text(SEATS_YAML)
     config = tmp_path / "agent_config.yaml"
-    # Entries for every seat the tests start; concierge is deliberately absent (see the missing-entry test).
-    config.write_text("".join(f"{seat}:\n  agent_id: id-{seat}\n  api_key: key-{seat}\n" for seat in ("verifier", "routing", "gym")))
+    # Entries for every seat the tests start; stay is deliberately absent (see the missing-entry test).
+    config.write_text("".join(f"{seat}:\n  agent_id: id-{seat}\n  api_key: key-{seat}\n" for seat in ("verifier", "routing", "gym", "concierge")))
     return seats, config
 
 
@@ -89,13 +91,30 @@ def test_a_missing_band_config_is_reported_without_connecting(tmp_path, capsys):
 
 
 def test_a_config_without_this_seats_entry_is_reported(files, capsys):
-    code, recorder = _run(["concierge", "--offline"], files)  # the config has no concierge entry
+    code, recorder = _run(["stay", "--stubs"], files)  # the config has no stay entry
 
     assert code == 2 and recorder.calls == []
-    assert "concierge" in capsys.readouterr().err
+    assert "stay" in capsys.readouterr().err
 
 
 def test_an_unknown_seat_is_a_usage_error(files):
     with pytest.raises(SystemExit) as exc:
         _run(["intern"], files)
     assert exc.value.code == 2
+
+
+def _first_machine_message(recorder):
+    from plan_my_stay.messages import Message
+
+    out = recorder.seats[0].handle_text("Mario", "plan the demo trip")
+    return [m for m in out if isinstance(m, Message)][0]
+
+
+def test_the_concierge_talks_only_to_the_stay_agent_unless_asked_for_the_full_pipeline(files):
+    from plan_my_stay.enums import MessageType
+
+    _, stay_only = _run(["concierge", "--offline"], files)
+    _, full = _run(["concierge", "--offline", "--full"], files)
+
+    assert _first_machine_message(stay_only).type is MessageType.REQUEST
+    assert _first_machine_message(full).type is MessageType.ROUTE_REQUEST

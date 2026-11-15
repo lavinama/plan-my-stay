@@ -82,6 +82,7 @@ def ask_cheaper(run: Run, reserve: float) -> Result:
         budget=cheaper_ceiling(state.budget, reserve),
         reply_to=run.shortlist_id,
         note=f" (cheaper options, round {round_})",
+        meetings=run.meetings,
     )
     return _waiting_for_stay(run, state, request, stay_round=round_), [request]
 
@@ -92,7 +93,13 @@ def widen_and_ask(run: Run) -> Result:
     state = run.trip.bump(budget=widen_budget(old))
     was, now = fmt_money(old.amount, old.currency), fmt_money(state.budget.amount, state.budget.currency)
     request = specialist_request(
-        state, Seat.STAY, round=MAX_ROUNDS, budget=state.budget, reply_to=run.shortlist_id, note=" (widened budget)"
+        state,
+        Seat.STAY,
+        round=MAX_ROUNDS,
+        budget=state.budget,
+        reply_to=run.shortlist_id,
+        note=" (widened budget)",
+        meetings=run.meetings,
     )
     warning = (
         f"No stay fit your {was} budget, so the budget was widened to {now}. Check the stay price before you book."

@@ -147,3 +147,22 @@ def _ranked(
         deciding_factor=deciding_factor,
         scores=dict(scores),
     )
+
+
+def keep_stay_order(stays: Sequence[StayOption], *, anchor_ids: Sequence[str], top_n: int = TOP_N) -> tuple[RankedStay, ...]:
+    """With the Stay agent as the only specialist, keep its order: it ranks by average commute and the Concierge shows
+    the first `top_n` of the hotels the budget leaves (docs/PLAN.md, "How hotels are ranked"). The score is only the
+    commute against the best hotel's, so the reply can show the numbers behind each placement; it never re-sorts.
+    No gym or restaurant number is claimed."""
+    if not stays or top_n <= 0:
+        return ()
+    commutes = [_commute(s, anchor_ids) for s in stays]
+    known = [c for c in commutes if c is not None]
+    best = min(known) if known else None
+    values: dict[str, Sequence[float | None]] = {"commute": commutes, "gym": [None] * len(stays), "restaurants": [None] * len(stays)}
+    shown = []
+    for index in range(min(top_n, len(stays))):
+        score = 0.0 if best is None else _score(best, commutes[index], _OFFSETS["commute"])
+        scores = {} if best is None else {"commute": score}
+        shown.append(_ranked(index + 1, stays[index], score, scores, values, index, None, None, "commute"))
+    return tuple(shown)

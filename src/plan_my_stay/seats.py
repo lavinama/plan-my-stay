@@ -20,7 +20,8 @@ _MEMORY_SETTINGS = ("cognee_api_key", "cognee_tenant_id", "cognee_base_url", "co
 _STUBS: dict[Seat, type] = {Seat.STAY: StayStub, Seat.RESTAURANT: RestaurantStub, Seat.GYM: GymStub}
 
 
-def build_seat(seat: Seat, settings: Settings, *, offline: bool = False, use_stubs: bool = False) -> Any:
+def build_seat(seat: Seat, settings: Settings, *, offline: bool = False, use_stubs: bool = False, full: bool = False) -> Any:
+    """`full` is for the Concierge: talk to Routing, the Verifier and the other specialists too, not only the Stay agent."""
     if seat is Seat.VERIFIER:
         from plan_my_stay.verifier.seat import VerifierSeat
 
@@ -28,7 +29,7 @@ def build_seat(seat: Seat, settings: Settings, *, offline: bool = False, use_stu
     if seat is Seat.ROUTING:
         return _routing(settings, offline)
     if seat is Seat.CONCIERGE:
-        return _concierge(settings, offline)
+        return _concierge(settings, offline, full)
     return _specialist(seat, settings, use_stubs=use_stubs)
 
 
@@ -45,13 +46,13 @@ def _routing(settings: Settings, offline: bool) -> Any:
     return RoutingSeat(GoogleMapsClient(settings.google_maps_api_key, max_calls=MAX_MAPS_CALLS))
 
 
-def _concierge(settings: Settings, offline: bool) -> Any:
+def _concierge(settings: Settings, offline: bool, full: bool) -> Any:
     from plan_my_stay.concierge.seat import ConciergeSeat
 
     if offline:
         from plan_my_stay.memory.in_memory import InMemoryMemory
 
-        return ConciergeSeat(InMemoryMemory(), None, fee_reserve_pct=settings.fee_reserve_pct)
+        return ConciergeSeat(InMemoryMemory(), None, fee_reserve_pct=settings.fee_reserve_pct, stay_only=not full)
 
     settings.require(*_MEMORY_SETTINGS)
     from plan_my_stay.memory.cognee_client import CogneeClient
@@ -63,7 +64,9 @@ def _concierge(settings: Settings, offline: bool) -> Any:
         tenant_id=settings.cognee_tenant_id,
         dataset_id=settings.cognee_dataset_id,
     )
-    return ConciergeSeat(CogneeMemory(client), _frontier_llm(settings), fee_reserve_pct=settings.fee_reserve_pct)
+    return ConciergeSeat(
+        CogneeMemory(client), _frontier_llm(settings), fee_reserve_pct=settings.fee_reserve_pct, stay_only=not full
+    )
 
 
 def _frontier_llm(settings: Settings) -> Any | None:

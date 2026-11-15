@@ -86,3 +86,23 @@ def test_a_broken_live_agent_is_an_error_not_a_silent_fallback_to_the_stub(monke
 
     with pytest.raises(RuntimeError, match="broken"):
         build_seat(Seat.GYM, Settings.from_env({}))
+
+
+def test_the_concierge_talks_only_to_the_stay_agent_by_default():
+    from plan_my_stay.enums import MessageType
+    from plan_my_stay.messages import Message
+
+    seat = build_seat(Seat.CONCIERGE, Settings.from_env({}), offline=True)
+
+    machine = [m for m in seat.handle_text("Mario", "plan the demo trip") if isinstance(m, Message)]
+    assert [(m.type, m.to) for m in machine] == [(MessageType.REQUEST, (Seat.STAY,))]
+
+
+def test_the_full_flag_builds_the_concierge_that_also_uses_routing_and_the_verifier():
+    from plan_my_stay.enums import MessageType
+    from plan_my_stay.messages import Message
+
+    seat = build_seat(Seat.CONCIERGE, Settings.from_env({}), offline=True, full=True)
+
+    machine = [m for m in seat.handle_text("Mario", "plan the demo trip") if isinstance(m, Message)]
+    assert machine and all(m.type is MessageType.ROUTE_REQUEST and m.to == (Seat.ROUTING,) for m in machine)  # it geocodes first

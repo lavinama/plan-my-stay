@@ -145,6 +145,45 @@
       "title": "LatLng",
       "type": "object"
     },
+    "Meeting": {
+      "description": "A meeting as the Stay agent needs it to find the commute: where and when, and whether it counts for the stay.\n\nNever a title or attendees (extra fields are dropped on parse, so they cannot be carried). A request carries\nmeetings when the Concierge does not geocode them itself; otherwise it carries `Anchor`s with coordinates.",
+      "properties": {
+        "id": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "address": {
+          "minLength": 3,
+          "title": "Address",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "counts_for_stay": {
+          "title": "Counts For Stay",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "address",
+        "start",
+        "end",
+        "counts_for_stay"
+      ],
+      "title": "Meeting",
+      "type": "object"
+    },
     "Mode": {
       "description": "Travel modes the Routing seat answers for.",
       "enum": [
@@ -333,10 +372,19 @@
       "type": "integer"
     },
     "anchors": {
+      "default": [],
       "items": {
         "$ref": "#/$defs/Anchor"
       },
       "title": "Anchors",
+      "type": "array"
+    },
+    "meetings": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Meeting"
+      },
+      "title": "Meetings",
       "type": "array"
     },
     "zones": {
@@ -411,8 +459,7 @@
   },
   "required": [
     "city",
-    "dates",
-    "anchors"
+    "dates"
   ],
   "title": "RequestPayload",
   "type": "object"

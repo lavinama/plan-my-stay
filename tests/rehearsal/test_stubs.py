@@ -388,3 +388,18 @@ def test_every_hotel_query_reply_round_trips_through_the_contract():
     for message in (*GymStub().handle(query), *RestaurantStub().handle(query)):
         assert parse_message(serialize(message)) == message
         json.loads(serialize(message))
+
+
+def test_stay_stub_tells_the_concierge_a_preference_it_learned_so_run_two_has_something_to_remember():
+    out = _by_type(StayStub().handle(_request(Seat.STAY, budget=1000, response_type="stay_shortlist")))
+    learned = out[MessageType.PREFERENCE_LEARNED]
+
+    assert learned.to == (Seat.CONCIERGE,)
+    assert (learned.payload.key, learned.payload.value) == ("stay_noise", "quiet")
+    assert learned.payload.evidence
+
+
+def test_stay_stub_learns_it_once_not_again_when_asked_for_cheaper_stays():
+    retry = _request(Seat.STAY, round_=1, budget=870, response_type="stay_shortlist")
+
+    assert MessageType.PREFERENCE_LEARNED not in _by_type(StayStub().handle(retry))

@@ -1,6 +1,7 @@
 """Building the trip state and the merged plan: pure functions the seat calls.
 
-The Concierge gates and arbitrates; it does not rank. Items are merged in each specialist's own order.
+Items are merged in each specialist's own order. With the Stay agent as the only specialist the meetings go to it
+as `Meeting`s (address and time) and the Concierge builds no anchors.
 """
 
 import datetime as dt
@@ -11,7 +12,15 @@ from plan_my_stay.concierge.slots import build_slots
 from plan_my_stay.concierge.zones import ZoneProvider
 from plan_my_stay.enums import Seat
 from plan_my_stay.messages.payloads import ProposalPayload
-from plan_my_stay.models import Anchor, Conflict, LatLng, PlanEntry, Profile, Slot
+from plan_my_stay.models import (
+    Anchor,
+    Conflict,
+    LatLng,
+    Meeting,
+    PlanEntry,
+    Profile,
+    Slot,
+)
 from plan_my_stay.state import TripState
 from plan_my_stay.timeutil import TRIP_TZ
 
@@ -40,6 +49,16 @@ def build_anchors(intake: TripIntake, located: Mapping[str, LatLng], check_in_ti
     )
 
 
+def build_meetings(intake: TripIntake, check_in_time: dt.time) -> tuple[Meeting, ...]:
+    """One `Meeting` per meeting, for a Stay agent that finds the coordinates itself. Address and time only: never a
+    title or attendees. `counts_for_stay` is false for a meeting that starts before check-in, as for an anchor."""
+    check_in = dt.datetime.combine(intake.check_in, check_in_time, tzinfo=TRIP_TZ)
+    return tuple(
+        Meeting(id=m.id, address=m.address, start=m.start, end=m.end, counts_for_stay=m.start >= check_in)
+        for m in intake.meetings
+    )
+
+
 def slots_for_trip(intake: TripIntake, profile: Profile) -> tuple[Slot, ...]:
     """The intake's slots; the workout windows follow the remembered preferred time (the demo keeps its own)."""
     if intake.is_demo:
@@ -58,8 +77,11 @@ def build_state(
     anchors: Sequence[Anchor],
     profile: Profile,
     zones: ZoneProvider,
+    roster: Sequence[Seat] | None = None,
 ) -> TripState:
-    roster = (Seat.STAY, Seat.RESTAURANT, *((Seat.GYM,) if intake.wants_workouts else ()))
+    """The roster is every specialist the trip needs, unless the caller names the seats (the Stay agent alone)."""
+    if roster is None:
+        roster = (Seat.STAY, Seat.RESTAURANT, *((Seat.GYM,) if intake.wants_workouts else ()))
     return TripState(
         trip_id=trip_id,
         user_id=user_id,
@@ -72,7 +94,7 @@ def build_state(
         slots=slots_for_trip(intake, profile),
         budget=intake.budget,
         profile=profile,
-        roster=roster,
+        roster=tuple(roster),
     )
 
 

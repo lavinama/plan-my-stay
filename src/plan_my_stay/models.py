@@ -83,6 +83,28 @@ class Anchor(Frozen):
         return self
 
 
+Address1 = Annotated[str, StringConstraints(strip_whitespace=True, min_length=3)]
+
+
+class Meeting(Frozen):
+    """A meeting as the Stay agent needs it to find the commute: where and when, and whether it counts for the stay.
+
+    Never a title or attendees (extra fields are dropped on parse, so they cannot be carried). A request carries
+    meetings when the Concierge does not geocode them itself; otherwise it carries `Anchor`s with coordinates."""
+
+    id: Identifier
+    address: Address1
+    start: AwareDatetime
+    end: AwareDatetime
+    counts_for_stay: bool  # false for a meeting that starts before check-in: it doesn't constrain where the stay is
+
+    @model_validator(mode="after")
+    def _ends_after_start(self) -> "Meeting":
+        if self.end <= self.start:
+            raise ValueError("end must be after start")
+        return self
+
+
 class Window(Frozen):
     start: ClockTime
     end: ClockTime

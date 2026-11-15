@@ -113,6 +113,16 @@ def _raw_examples() -> dict[str, dict[str, Any]]:
              "state": demo.demo_state_with_plan().model_dump(mode="json")},
             state_version=3,
         ),
+        "stay_request": _envelope(
+            17, "request", "concierge", ["stay"], "Find stays in New York, NY, Tue 17 Nov to Thu 19 Nov within $1,000.00",
+            {"city": demo.CITY, "dates": {"check_in": "2026-11-17", "check_out": "2026-11-19"}, "guests": 1,
+             "meetings": [{"id": a.id, "address": demo.MEETING_ADDRESSES[a.id], "start": a.start.isoformat(),
+                           "end": a.end.isoformat(), "counts_for_stay": a.counts_for_stay} for a in demo.demo_anchors()],
+             "zones": [z.model_dump(mode="json") for z in demo.demo_zones()],
+             "profile": {"stay_preferences": ["quiet street", "private bathroom"]},
+             "constraints": {"max_walk_minutes": 15}, "budget": {"currency": "USD", "amount": 1000},
+             "roster": ["stay"], "round": 0, "response_type": "stay_shortlist"},
+        ),
         "zone_fit": _envelope(
             3, "zone_fit", "restaurant", ["stay"], "Chelsea: 7 vegetarian options within a short walk",
             {"zone_id": "z1", "counts": {"restaurants": 7, "gyms": None},
