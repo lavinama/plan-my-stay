@@ -2,9 +2,11 @@
 Given your itinerary we plan your perfect stay.
 
 Plan My Stay is a team of agents that plans a work trip around your meetings and remembers how you
-like to travel. You give a city, dates, a budget and your meetings; a Stay, a Restaurant and a Gym
-agent find options and message each other while they work; a Verifier can block the plan; the
+like to travel. You give a city, dates, a budget and your meetings; a Stay
+agent finds and ranks stays; a Verifier can block the plan; the
 Concierge writes the itinerary. You book it yourself: the agents never pay.
+
+> **Plan change, not yet in the code (14 Nov):** `docs/PLAN.md` now has the Concierge speaking only with the Stay agent. The Restaurant agent and `restaurant_fit` are out, and the Gym agent (with `hotel_query`, `gym_fit`, `stay_pick` and `workout_slot`) is deferred, so hotels are ranked by average commute alone. The code, the demo and the rest of this README still have the Restaurant and Gym seats and a three-factor ranking until the code is changed.
 
 The Hive Mind hackathon plan is in [docs/PLAN.md](docs/PLAN.md).
 The questions to settle before building the gym agent are in [docs/GYM_AGENT_QUESTIONS.md](docs/GYM_AGENT_QUESTIONS.md).

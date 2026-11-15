@@ -5,6 +5,8 @@ number: **building Mario's half of the plan here took about 45 minutes, not 10.*
 went and a plan the measurements support. The repo now removes the two biggest costs, so the plan is
 reachable the next time, and for the three teammates' agents that are still to build.
 
+> **Plan change (14 Nov):** the Restaurant agent is out and the Gym agent is deferred (`docs/PLAN.md`), so the Restaurant and Gym lanes, and the lane brief below, no longer apply for now: only the Stay agent is left to build. The measured build times describe the code as built, which still has those seats.
+
 ## What "10 minutes" can cover
 
 **Can be in 10 minutes:** the code for all six seats with tests green, and the New York demo trip running end

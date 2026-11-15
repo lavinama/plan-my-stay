@@ -5,6 +5,8 @@ together. `docs/PLAN.md` is the plan; this file settles the details the plan lea
 seats can be built in parallel and still connect. Where this file adds something the plan does
 not say, it is marked **New** and listed in "Decisions to confirm with the team" at the end.
 
+> **Plan change, not yet in the code (14 Nov):** `docs/PLAN.md` now has the Concierge speaking only with the Stay agent. The Restaurant agent and `restaurant_fit` are out, and the Gym agent (with `hotel_query`, `gym_fit`, `stay_pick` and `workout_slot`) is deferred, so hotels are ranked by average commute alone. This file describes the code as built, which still has the Restaurant and Gym seats, `restaurant_fit`, `zone_fit`, `hotel_query`, `gym_fit` and the three-factor ranking of section 5a. Changing the code means removing them and leaving the Concierge to pass the Stay agent's commute order through, with the Verifier's block moving from a restaurant's hours to a stay's travel time.
+
 ## 1. The handler contract
 
 - A seat is an object with `handle(message: Message) -> Sequence[Outgoing]` (`src/plan_my_stay/seat.py`).
